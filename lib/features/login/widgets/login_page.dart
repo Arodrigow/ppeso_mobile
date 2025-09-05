@@ -10,11 +10,12 @@ class LoginPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.appBackground,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [            
-            LoginCard(),
-          ],          
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [LoginCard()],
+          ),
         ),
       ),
     );
