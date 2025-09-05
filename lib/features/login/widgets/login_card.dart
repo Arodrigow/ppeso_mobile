@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/shared/content.dart';
 
@@ -49,7 +50,7 @@ class LoginCard extends StatelessWidget {
               children: [
                 ElevatedButton(
                   onPressed: () {
-                    // Handle login logic here
+                     context.replace('/profile');
                   },
                   style: ButtonStyles.defaultAcceptButton,
                   child: const Text(LoginText.loginButton),
