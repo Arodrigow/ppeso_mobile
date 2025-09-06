@@ -4,8 +4,33 @@ import 'package:go_router/go_router.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/shared/content.dart';
 
-class LoginCard extends StatelessWidget {
+class LoginCard extends StatefulWidget {
   const LoginCard({super.key});
+
+  @override
+  State<LoginCard> createState() => _LoginCardState();
+}
+
+class _LoginCardState extends State<LoginCard> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  void _login() {
+    final email = emailController.text;
+    final password = passwordController.text;
+
+    if (email != "" || password != "") {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Invalid email or password"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    context.replace('/profile');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +54,7 @@ class LoginCard extends StatelessWidget {
               ],
             ),
             TextFormField(
+              controller: emailController,
               decoration: InputDecoration(
                 labelText: LoginText.email,
                 enabledBorder: TextInputStyles.enabledDefault,
@@ -38,6 +64,7 @@ class LoginCard extends StatelessWidget {
             const SizedBox(height: 20),
             TextFormField(
               obscureText: true,
+              controller: passwordController,
               decoration: InputDecoration(
                 labelText: LoginText.password,
                 enabledBorder: TextInputStyles.enabledDefault,
@@ -49,9 +76,7 @@ class LoginCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 ElevatedButton(
-                  onPressed: () {
-                     context.replace('/profile');
-                  },
+                  onPressed: _login,
                   style: ButtonStyles.defaultAcceptButton,
                   child: const Text(LoginText.loginButton),
                 ),

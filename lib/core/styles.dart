@@ -25,7 +25,7 @@ class AppTextStyles {
 class AppColors {
   static const primary = Color(0xFF087f8a);
   static const accent = Color(0xFF08d4a5);
-  static const appBackground = Color(0xFFfafafa);
+  static const appBackground = Color.fromARGB(255, 218, 255, 243);
   static const widgetBackground = Colors.white;
 }
 
