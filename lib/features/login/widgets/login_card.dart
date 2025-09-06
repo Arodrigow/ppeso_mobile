@@ -16,18 +16,18 @@ class _LoginCardState extends State<LoginCard> {
   final TextEditingController passwordController = TextEditingController();
 
   void _login() {
-    final email = emailController.text;
-    final password = passwordController.text;
+    // final email = emailController.text;
+    // final password = passwordController.text;
 
-    if (email != "" || password != "") {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Invalid email or password"),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    // if (email != "" || password != "") {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(
+    //       content: Text("Invalid email or password"),
+    //       backgroundColor: Colors.red,
+    //     ),
+    //   );
+    //   return;
+    // }
 
     context.replace('/profile');
   }
@@ -47,8 +47,8 @@ class _LoginCardState extends State<LoginCard> {
               children: [
                 SvgPicture.asset(
                   "assets/svg/svg_base.svg",
-                  width: 150,
-                  height: 150,
+                  width: 100,
+                  height: 100,
                 ),
                 const Text("PPESO", style: AppTextStyles.ppesoTitle),
               ],
