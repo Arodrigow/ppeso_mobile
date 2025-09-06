@@ -5,3 +5,9 @@ class LoginText {
   static const registerButton = 'Registrar';
   static const loginButton = 'Entrar';
 }
+
+class ProfilePageText {
+  static const info = "Informações pessoais";
+  static const health = "Estratégia";
+  static const weight = "Peso";
+}
