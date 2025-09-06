@@ -10,13 +10,15 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
+    return 
+    DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: Text("PPeso", style: AppTextStyles.title,),
-          bottom: const TabBar(
-            isScrollable: true,
+          bottom: 
+          const TabBar(
+            // isScrollable: true,
             tabs: [
               Tab(text: ProfilePageText.info),
               Tab(text: ProfilePageText.health),
