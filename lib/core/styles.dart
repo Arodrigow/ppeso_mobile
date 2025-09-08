@@ -12,12 +12,21 @@ class AppTextStyles {
     fontWeight: FontWeight.bold,
   );
   static const subTitle = TextStyle(
-    fontSize: 22,
+    fontSize: 20,
     color: Color.fromARGB(255, 54, 54, 54),
     fontWeight: FontWeight.w500,
   );
+  static const bodyBold = TextStyle(
+    fontSize: 16,
+    color: Color.fromARGB(255, 54, 54, 54),
+    fontWeight: FontWeight.bold
+  );
   static const body = TextStyle(
     fontSize: 16,
+    color: Color.fromARGB(255, 54, 54, 54),
+  );
+  static const description = TextStyle(
+    fontSize: 12,
     color: Color.fromARGB(255, 54, 54, 54),
   );
 }
