@@ -65,9 +65,11 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 3), () {
+    //TODO Change back to 3seconds
+    Future.delayed(const Duration(seconds: 0), () {
       if (!mounted) return;
-       context.replace('/login');
+    //TODO Change back to login
+       context.replace('/profile');
     });
   }
 

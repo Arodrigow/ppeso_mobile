@@ -56,7 +56,7 @@ class _LoginCardState extends State<LoginCard> {
             TextFormField(
               controller: emailController,
               decoration: InputDecoration(
-                labelText: LoginText.email,
+                labelText: UserTextFields.email,
                 enabledBorder: TextInputStyles.enabledDefault,
                 focusedBorder: TextInputStyles.focusDefault,
               ),
@@ -66,7 +66,7 @@ class _LoginCardState extends State<LoginCard> {
               obscureText: true,
               controller: passwordController,
               decoration: InputDecoration(
-                labelText: LoginText.password,
+                labelText: UserTextFields.password,
                 enabledBorder: TextInputStyles.enabledDefault,
                 focusedBorder: TextInputStyles.focusDefault,
               ),
