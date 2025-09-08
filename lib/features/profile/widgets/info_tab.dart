@@ -30,11 +30,11 @@ class _InfoTabState extends State<InfoTab> {
     return Scaffold(
       backgroundColor: AppColors.appBackground,
       body: Center(
-        child: ListView(
-          children: [
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600),
-              child: Column(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ListView(
+            children: [
+              Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Card(
@@ -122,8 +122,8 @@ class _InfoTabState extends State<InfoTab> {
                   ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
