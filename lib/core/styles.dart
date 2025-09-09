@@ -11,6 +11,11 @@ class AppTextStyles {
     color: Color.fromARGB(255, 54, 54, 54),
     fontWeight: FontWeight.bold,
   );
+  static const titleWhite = TextStyle(
+    fontSize: 22,
+    color: Color.fromARGB(255, 255, 255, 255),
+    fontWeight: FontWeight.bold,
+  );
   static const subTitle = TextStyle(
     fontSize: 20,
     color: Color.fromARGB(255, 54, 54, 54),
