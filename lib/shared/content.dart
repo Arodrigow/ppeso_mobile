@@ -23,7 +23,7 @@ class UserTextFields {
   //Strategy Content
   static const strategyTitle = "";
   //Exercise levels content
-  static const activityLevel = "Nível de atividade";
+  static const activityLevel = "Nível de atividade: ";
   static const basalExercies = "Basal";
   static const basalExerciesDesc = "Taxa Metabólica Basal (TMB).";
   static const sedentaryExercies = "Sedentário";
@@ -49,8 +49,14 @@ class UserTextFields {
   static const lowCaloriesDesc = "0,25 kg/semana.";
   static const moderateCalories = "Moderado";
   static const moderateCaloriesDesc = "0,5 kg/semana.";
-  static const extremeCalories = "Moderado";
+  static const extremeCalories = "Extremo";
   static const extremeCaloriesDesc = "1 kg/semana.";
+}
+
+class ModalText {
+  static const chooseOption = "Escolha olha opção";
+  static const updateOption = "Confirmar";
+  static const cancelOption = "Cancelar";
 }
 
 enum ExerciseLevel {
@@ -134,7 +140,7 @@ extension CalorieStratExtensions on CalorieStrat {
       case CalorieStrat.moderado:
         return UserTextFields.moderateCaloriesDesc;
       case CalorieStrat.extremo:
-        return UserTextFields.extremeActiveExerciesDesc;
+        return UserTextFields.extremeCaloriesDesc;
     }
   }
 }
