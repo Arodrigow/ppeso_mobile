@@ -24,10 +24,9 @@ class _HealthTabState extends State<HealthTab> {
         Row(
           children: [
             Text(UserTextFields.activityLevel, style: AppTextStyles.bodyBold),
+            const SizedBox(width: 15),
             ElevatedButton(
               onPressed: () {
-                ExerciseLevel? tempSelectedExerciseLevel =
-                    _selectedExerciseLevel;
                 CustomModal.bottomSheet(
                   context,
                   child: StatefulBuilder(
@@ -41,10 +40,11 @@ class _HealthTabState extends State<HealthTab> {
                           ),
                           const SizedBox(height: 20),
                           RadioGroup<ExerciseLevel>(
-                            groupValue: tempSelectedExerciseLevel,
+                            groupValue: _selectedExerciseLevel,
                             onChanged: (ExerciseLevel? value) {
-                              setModalExerciseState(() {
-                                tempSelectedExerciseLevel = value;
+                              setState(() {
+                                _selectedExerciseLevel = value;
+                                Navigator.pop(context);
                               });
                             },
                             child: Column(
@@ -65,24 +65,18 @@ class _HealthTabState extends State<HealthTab> {
                               ],
                             ),
                           ),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                _selectedExerciseLevel =
-                                    tempSelectedExerciseLevel;
-                              });
-                              Navigator.pop(context); // close modal
-                            },
-                            child: const Text(ModalText.updateOption),
-                          ),
                         ],
                       );
                     },
                   ),
                 );
               },
-              child: Text(
-                "${_selectedExerciseLevel?.title}: ${_selectedExerciseLevel?.description}",
+              child: Row(
+                children: [
+                  Text("${_selectedExerciseLevel?.title}"),
+                  const SizedBox(width: 8),
+                  Icon(Icons.edit, color: AppColors.primary),
+                ],
               ),
             ),
           ],
@@ -91,9 +85,9 @@ class _HealthTabState extends State<HealthTab> {
         Row(
           children: [
             Text(UserTextFields.colorieTiTle, style: AppTextStyles.bodyBold),
+            const SizedBox(width: 15),
             ElevatedButton(
               onPressed: () {
-                CalorieStrat? tempSelectedCalRegime = _selectedCalRegime;
                 CustomModal.bottomSheet(
                   context,
                   child: StatefulBuilder(
@@ -107,11 +101,12 @@ class _HealthTabState extends State<HealthTab> {
                           ),
                           const SizedBox(height: 20),
                           RadioGroup<CalorieStrat>(
-                            groupValue: tempSelectedCalRegime,
+                            groupValue: _selectedCalRegime,
                             onChanged: (CalorieStrat? value) {
-                              setModalColorieState(() {
-                                tempSelectedCalRegime = value;
+                              setState(() {
+                                _selectedCalRegime = value;
                               });
+                              Navigator.pop(context); // close modal
                             },
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,16 +123,7 @@ class _HealthTabState extends State<HealthTab> {
                                       style: AppTextStyles.description,
                                     ),
                                   ),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.pop(context); // close modal
-                                    setState(() {
-                                      _selectedCalRegime =
-                                          tempSelectedCalRegime;
-                                    });
-                                  },
-                                  child: const Text(ModalText.updateOption),
-                                ),
+                                const SizedBox(height: 10),
                               ],
                             ),
                           ),
@@ -147,8 +133,12 @@ class _HealthTabState extends State<HealthTab> {
                   ),
                 );
               },
-              child: Text(
-                "${_selectedCalRegime?.title}: ${_selectedCalRegime?.description}",
+              child: Row(
+                children: [
+                  Text("${_selectedCalRegime?.title}"),
+                  const SizedBox(width: 8),
+                  Icon(Icons.edit, color: AppColors.primary),
+                ],
               ),
             ),
           ],

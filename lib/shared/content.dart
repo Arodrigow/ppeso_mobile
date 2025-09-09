@@ -42,7 +42,7 @@ class UserTextFields {
   static const extremeActiveExerciesDesc =
       "Exercício super intensivo diário ou trabalho braçal.";
   //Calorie regime content
-  static const colorieTiTle = "Regime calórico";
+  static const colorieTiTle = "Regime calórico: ";
   static const maintainCalories = "Manter";
   static const maintainCaloriesDesc = "Mantém peso";
   static const lowCalories = "Leve";
@@ -54,7 +54,7 @@ class UserTextFields {
 }
 
 class ModalText {
-  static const chooseOption = "Escolha olha opção";
+  static const chooseOption = "Escolha uma opção";
   static const updateOption = "Confirmar";
   static const cancelOption = "Cancelar";
 }
