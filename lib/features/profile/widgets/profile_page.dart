@@ -15,7 +15,8 @@ class ProfilePage extends StatelessWidget {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: Text("PPeso", style: AppTextStyles.title,),
+          title: Text("PPeso", style: AppTextStyles.titleWhite,),
+          backgroundColor: AppColors.primary,
           bottom: 
           const TabBar(
             // isScrollable: true,
@@ -24,6 +25,9 @@ class ProfilePage extends StatelessWidget {
               Tab(text: ProfilePageText.health),
               Tab(text: ProfilePageText.weight),
             ],
+            labelColor: AppColors.appBackground,
+            unselectedLabelColor: AppColors.widgetBackground,
+            indicatorColor: AppColors.appBackground,
           ),
         ),
         body: const TabBarView(children: [
