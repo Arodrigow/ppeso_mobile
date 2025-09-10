@@ -10,22 +10,25 @@ class TabStructure extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.widgetBackground,
-      body: Center(
-        child: SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: children,
-                  ),
+      body: SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 30,
+                  bottom: 20,
                 ),
-              ],
-            ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [const SizedBox(height: 20), ...children],
+                ),
+              ),
+            ],
           ),
         ),
       ),
