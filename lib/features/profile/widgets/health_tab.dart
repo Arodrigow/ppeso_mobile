@@ -14,7 +14,7 @@ class HealthTab extends StatefulWidget {
 class _HealthTabState extends State<HealthTab> {
   ExerciseLevel? _selectedExerciseLevel = ExerciseLevel.leve;
   CalorieStrat? _selectedCalRegime = CalorieStrat.extremo;
-  String? selectedObjective;
+  Strategy? _selectedStrategy = Strategy.zigZag2;
 
   @override
   Widget build(BuildContext context) {
@@ -136,6 +136,68 @@ class _HealthTabState extends State<HealthTab> {
               child: Row(
                 children: [
                   Text("${_selectedCalRegime?.title}"),
+                  const SizedBox(width: 8),
+                  Icon(Icons.edit, color: AppColors.primary),
+                ],
+              ),
+            ),
+          ],
+        ),
+        //Row - Calorie Regime
+        Row(
+          children: [
+            Text(UserTextFields.strategyTitle, style: AppTextStyles.bodyBold),
+            const SizedBox(width: 15),
+            ElevatedButton(
+              onPressed: () {
+                CustomModal.bottomSheet(
+                  context,
+                  child: StatefulBuilder(
+                    builder: (context, setModalStrategyState) {
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            ModalText.chooseOption,
+                            style: TextStyle(fontSize: 18),
+                          ),
+                          const SizedBox(height: 20),
+                          RadioGroup<Strategy>(
+                            groupValue: _selectedStrategy,
+                            onChanged: (Strategy? value) {
+                              setState(() {
+                                _selectedStrategy = value;
+                              });
+                              Navigator.pop(context); // close modal
+                            },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (final strat in Strategy.values)
+                                  RadioListTile(
+                                    value: strat,
+                                    title: Text(
+                                      strat.title,
+                                      style: AppTextStyles.bodyBold,
+                                    ),
+                                    subtitle: Text(
+                                      strat.description,
+                                      style: AppTextStyles.description,
+                                    ),
+                                  ),
+                                const SizedBox(height: 10),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                );
+              },
+              child: Row(
+                children: [
+                  Text("${_selectedStrategy?.title}"),
                   const SizedBox(width: 8),
                   Icon(Icons.edit, color: AppColors.primary),
                 ],

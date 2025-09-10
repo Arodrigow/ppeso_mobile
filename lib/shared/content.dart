@@ -20,8 +20,6 @@ class UserTextFields {
   static const password = 'Senha';
   static const birthday = "Aniversário";
   static const height = "Altura (cm)";
-  //Strategy Content
-  static const strategyTitle = "";
   //Exercise levels content
   static const activityLevel = "Nível de atividade: ";
   static const basalExercies = "Basal";
@@ -51,6 +49,17 @@ class UserTextFields {
   static const moderateCaloriesDesc = "0,5 kg/semana.";
   static const extremeCalories = "Extremo";
   static const extremeCaloriesDesc = "1 kg/semana.";
+  //Weight loss strategy content
+  static const strategyTitle = "Estratégia: ";
+  static const fixed = "Fixo (kCal)";
+  static const fixedDesc = "Valor calórico diário fixo.";
+  static const zigZag1 = "Zig Zag Fixo (kCal)";
+  static const zigZag1Desc = "Valor calórico varia entre dia da semana e fim de semana.";
+  static const zigZag2 = "Zig Zag Variável (kCal)";
+  static const zigZag2Desc = "Valor calórico varia diariamente.";
+  static const sCustom = "Customizado";
+  static const sCustomDesc = "Entrar os valores diários manualmente.";
+
 }
 
 class ModalText {
@@ -89,7 +98,7 @@ extension ExerciseLeveExtensions on ExerciseLevel {
     }
   }
 
-    String get description {
+  String get description {
     switch (this) {
       case ExerciseLevel.basal:
         return UserTextFields.basalExerciesDesc;
@@ -109,13 +118,7 @@ extension ExerciseLeveExtensions on ExerciseLevel {
   }
 }
 
-
-enum CalorieStrat {
-  manter,
-  leve,
-  moderado,
-  extremo
-}
+enum CalorieStrat { manter, leve, moderado, extremo }
 
 extension CalorieStratExtensions on CalorieStrat {
   String get title {
@@ -131,7 +134,7 @@ extension CalorieStratExtensions on CalorieStrat {
     }
   }
 
-    String get description {
+  String get description {
     switch (this) {
       case CalorieStrat.manter:
         return UserTextFields.maintainCaloriesDesc;
@@ -141,6 +144,36 @@ extension CalorieStratExtensions on CalorieStrat {
         return UserTextFields.moderateCaloriesDesc;
       case CalorieStrat.extremo:
         return UserTextFields.extremeCaloriesDesc;
+    }
+  }
+}
+
+enum Strategy { fixo, zigZag1, zigZag2, sCustom }
+
+extension StrategyExtensions on Strategy {
+  String get title {
+    switch (this) {
+      case Strategy.zigZag1:
+        return UserTextFields.zigZag1;
+      case Strategy.zigZag2:
+        return UserTextFields.zigZag2;
+      case Strategy.sCustom:
+        return UserTextFields.sCustom;
+      default:
+        return UserTextFields.fixed;
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case Strategy.zigZag1:
+        return UserTextFields.zigZag1Desc;
+      case Strategy.zigZag2:
+        return UserTextFields.zigZag2Desc;
+      case Strategy.sCustom:
+        return UserTextFields.sCustomDesc;
+      default:
+        return UserTextFields.fixedDesc;
     }
   }
 }
