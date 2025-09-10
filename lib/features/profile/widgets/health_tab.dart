@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:ppeso_mobile/core/styles.dart';
+import 'package:ppeso_mobile/features/profile/models/daily_value.dart';
 import 'package:ppeso_mobile/features/profile/widgets/custom_modal.dart';
+import 'package:ppeso_mobile/features/profile/widgets/weekly_grid.dart';
 import 'package:ppeso_mobile/shared/content.dart';
+import 'package:ppeso_mobile/shared/divider.dart';
 import 'package:ppeso_mobile/shared/tab_structure.dart';
 
 class HealthTab extends StatefulWidget {
@@ -16,11 +19,24 @@ class _HealthTabState extends State<HealthTab> {
   CalorieStrat? _selectedCalRegime = CalorieStrat.extremo;
   Strategy? _selectedStrategy = Strategy.zigZag2;
 
+  final weeklyValue = 20000;
+  final daysOfWeek = [
+    DailyValue(label: "Seg", value: 120),
+    DailyValue(label: "Ter", value: 90),
+    DailyValue(label: "Qua", value: 150),
+    DailyValue(label: "Qui", value: 80),
+    DailyValue(label: "Sex", value: 200),
+    DailyValue(label: "Sáb", value: 130),
+    DailyValue(label: "Dom", value: 170),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return TabStructure(
       children: [
+        Text("Estratégia", style: AppTextStyles.title),
         //Row - Exercise Level
+        const SizedBox(height: 20),
         Row(
           children: [
             Text(UserTextFields.activityLevel, style: AppTextStyles.bodyBold),
@@ -143,7 +159,7 @@ class _HealthTabState extends State<HealthTab> {
             ),
           ],
         ),
-        //Row - Calorie Regime
+        //Row - Weight Loss Strategy
         Row(
           children: [
             Text(UserTextFields.strategyTitle, style: AppTextStyles.bodyBold),
@@ -205,6 +221,38 @@ class _HealthTabState extends State<HealthTab> {
             ),
           ],
         ),
+        const DividerPPeso(),
+        const SizedBox(height: 25),
+        Row(
+          children: [Text("Sua estratégia: ", style: AppTextStyles.subTitle)],
+        ),
+        const SizedBox(height: 25),
+        Row(
+          children: [
+            Text("Valor semanal (kCal): ", style: AppTextStyles.bodyBold),
+            Text(weeklyValue.toString(), style: AppTextStyles.body),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Text("Valor diário (kCal)", style: AppTextStyles.bodyBold),
+            const SizedBox(width: 15),
+            if (_selectedStrategy == Strategy.sCustom)
+              ElevatedButton(
+                onPressed: () {},
+                child: Row(
+                  children: [
+                    Text("Customizar"),
+                    const SizedBox(width: 8),
+                    Icon(Icons.edit, color: AppColors.primary),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        WeeklyGrid(days: daysOfWeek),
       ],
     );
   }
