@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ppeso_mobile/core/styles.dart';
-import 'package:ppeso_mobile/features/profile/widgets/health_tab.dart';
-import 'package:ppeso_mobile/features/profile/widgets/info_tab.dart';
-import 'package:ppeso_mobile/features/profile/widgets/weight_tab.dart';
+import 'package:ppeso_mobile/features/profile/pages/health_tab.dart';
+import 'package:ppeso_mobile/features/profile/pages/info_tab.dart';
+import 'package:ppeso_mobile/features/profile/pages/weight_tab.dart';
 import 'package:ppeso_mobile/shared/content.dart';
 
 class ProfilePage extends StatelessWidget {

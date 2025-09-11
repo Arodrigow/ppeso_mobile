@@ -21,13 +21,13 @@ class _HealthTabState extends State<HealthTab> {
 
   final weeklyValue = 20000;
   final daysOfWeek = [
-    DailyValue(label: "Seg", value: 120),
-    DailyValue(label: "Ter", value: 90),
-    DailyValue(label: "Qua", value: 150),
-    DailyValue(label: "Qui", value: 80),
-    DailyValue(label: "Sex", value: 200),
-    DailyValue(label: "Sáb", value: 130),
-    DailyValue(label: "Dom", value: 170),
+    DailyValue(label: "Seg", value: 2120),
+    DailyValue(label: "Ter", value: 2190),
+    DailyValue(label: "Qua", value: 2150),
+    DailyValue(label: "Qui", value: 2180),
+    DailyValue(label: "Sex", value: 2100),
+    DailyValue(label: "Sáb", value: 1130),
+    DailyValue(label: "Dom", value: 1170),
   ];
 
   @override
@@ -60,8 +60,8 @@ class _HealthTabState extends State<HealthTab> {
                             onChanged: (ExerciseLevel? value) {
                               setState(() {
                                 _selectedExerciseLevel = value;
-                                Navigator.pop(context);
                               });
+                              Navigator.pop(context);
                             },
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,

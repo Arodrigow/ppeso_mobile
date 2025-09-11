@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/features/login/widgets/login_page.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ppeso_mobile/features/profile/widgets/profile_page.dart';
+import 'package:ppeso_mobile/features/profile/pages/profile_page.dart';
 import 'package:ppeso_mobile/shared/nav_layout.dart';
 
 void main() {
