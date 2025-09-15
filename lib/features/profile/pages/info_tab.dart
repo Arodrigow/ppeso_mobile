@@ -18,7 +18,7 @@ class _InfoTabState extends State<InfoTab> {
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(1900),
-      lastDate: DateTime(2100),
+      lastDate: DateTime.now(),
     );
 
     if (picked != null) {
@@ -68,6 +68,7 @@ class _InfoTabState extends State<InfoTab> {
             labelText: UserTextFields.birthday,
             enabledBorder: TextInputStyles.enabledDefault,
             focusedBorder: TextInputStyles.focusDefault,
+            suffixIcon: Icon(Icons.calendar_month, color: AppColors.primary,)
           ),
           onTap: _selectDate,
         ),
