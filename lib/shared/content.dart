@@ -68,6 +68,14 @@ class ModalText {
   static const cancelOption = "Cancelar";
 }
 
+class WeightTabContent {
+  static const addWeightButton = "Adicionar ppeso";
+  static const addDate = "Data";
+  static const addWeight= "PPeso";
+  static const addWeightData= "Adicionar";
+  static const closeWeightModal= "Cancelar";
+}
+
 enum ExerciseLevel {
   basal,
   sedentario,
