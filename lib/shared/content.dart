@@ -74,6 +74,7 @@ class WeightTabContent {
   static const addWeight= "PPeso";
   static const addWeightData= "Adicionar";
   static const closeWeightModal= "Cancelar";
+  static const historicWeightTitle= "Listar ppesos";
 }
 
 enum ExerciseLevel {
