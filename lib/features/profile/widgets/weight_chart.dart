@@ -5,24 +5,21 @@ import 'package:ppeso_mobile/features/profile/models/date_model.dart';
 
 class WeightChart extends StatelessWidget {
   final List<DateModel> weightData;
+  final double height;
 
-  const WeightChart({super.key, required this.weightData});
+  const WeightChart({super.key, required this.weightData, this.height = 250});
 
   @override
   Widget build(BuildContext context) {
     if (weightData.isEmpty) {
-      return const SizedBox(
-        height: 200,
-        child: Center(child: Text('No weight data available.')),
+      return SizedBox(
+        height: height,
+        child: const Center(child: Text('No weight data available.')),
       );
     }
 
     final sortedData = List<DateModel>.from(weightData)
       ..sort((a, b) => a.date.compareTo(b.date));
-    final firstDate = sortedData.first.date;
-    final minX = 0.0;
-    double maxX = sortedData.last.date.difference(firstDate).inDays.toDouble();
-    if (maxX == 0) maxX = 1; // prevent crash for single point
 
     final minWeight = sortedData
         .map((e) => e.weight)
@@ -32,44 +29,126 @@ class WeightChart extends StatelessWidget {
         .reduce((a, b) => a > b ? a : b);
 
     final minY = minWeight - 1;
-    // Ensure maxY is always greater than minY to prevent range errors in the chart.
     final maxY = (maxWeight == minWeight) ? minWeight + 2 : maxWeight + 1;
 
-    return LineChart(
-  LineChartData(
-    minX: minX,
-    maxX: maxX,
-    minY: minY,
-    maxY: maxY,
-    gridData: FlGridData(show: true),
-    titlesData: FlTitlesData(
-      bottomTitles: AxisTitles(
-        sideTitles: SideTitles(
-          showTitles: true,
-          getTitlesWidget: (value, meta) {
-            final index = value.toInt();
-            if (index < 0 || index >= sortedData.length) return const SizedBox();
-            final date = sortedData[index].date;
-            return Text("${date.day}/${date.month}");
-          },
-          interval: 1,
+    return SizedBox(
+      height: height,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
+        child: LineChart(
+          LineChartData(
+            minX: 0,
+            maxX: (sortedData.length - 1).toDouble(),
+            minY: minY,
+            maxY: maxY,
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: true,
+              horizontalInterval: 1,
+              verticalInterval: 1,
+              getDrawingHorizontalLine: (value) => FlLine(
+                color: Colors.grey.withValues(
+                  alpha: (Colors.grey.a * 0.2),
+                  red: (Colors.grey.r),
+                  green: (Colors.grey.g),
+                  blue: (Colors.grey.b),
+                ),
+                strokeWidth: 1,
+              ),
+              getDrawingVerticalLine: (value) => FlLine(
+                color: Colors.grey.withValues(
+                  alpha: (Colors.grey.a * 0.1),
+                  red: (Colors.grey.r),
+                  green: (Colors.grey.g),
+                  blue: (Colors.grey.b),
+                ),
+                strokeWidth: 1,
+              ),
+            ),
+            titlesData: FlTitlesData(
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  getTitlesWidget: (value, meta) {
+                    final index = value.toInt();
+                    if (index < 0 || index >= sortedData.length)
+                      return const SizedBox();
+                    final date = sortedData[index].date;
+                    return Text(
+                      "${date.day}/${date.month}/${date.year}",
+                      style: const TextStyle(fontSize: 10),
+                    );
+                  },
+                  interval: 1,
+                ),
+              ),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 40,
+                  interval: 1,
+                  getTitlesWidget: (value, meta) => Text(
+                    value.toStringAsFixed(1),
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                ),
+              ),
+              rightTitles: AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            ),
+            borderData: FlBorderData(
+              show: true,
+              border: Border.all(
+                color: Colors.grey.withValues(
+                  alpha: (Colors.grey.a * 0.3),
+                  red: (Colors.grey.r),
+                  green: (Colors.grey.g),
+                  blue: (Colors.grey.b),
+                ),
+                width: 1,
+              ),
+            ),
+            lineBarsData: [
+              LineChartBarData(
+                spots: sortedData
+                    .asMap()
+                    .entries
+                    .map((e) => FlSpot(e.key.toDouble(), e.value.weight))
+                    .toList(),
+                isCurved: true,
+                color: AppColors.accent,
+                barWidth: 3,
+                dotData: FlDotData(show: true),
+                belowBarData: BarAreaData(
+                  show: true,
+                  color: AppColors.accent.withValues(
+                    alpha: (AppColors.accent.a * 0.1),
+                    red: (AppColors.accent.r),
+                    green: (AppColors.accent.g),
+                    blue: (AppColors.accent.b),
+                  ),
+                ),
+              ),
+            ],
+            lineTouchData: LineTouchData(
+              enabled: true,
+              touchTooltipData: LineTouchTooltipData(
+                getTooltipItems: (touchedSpots) {
+                  return touchedSpots.map((spot) {
+                    final date = sortedData[spot.x.toInt()].date;
+                    return LineTooltipItem(
+                      "${date.day}/${date.month}/${date.year}\n${spot.y.toStringAsFixed(1)} kg",
+                      const TextStyle(color: Colors.white),
+                    );
+                  }).toList();
+                },
+              ),
+            ),
+          ),
         ),
       ),
-      leftTitles: AxisTitles(
-        sideTitles: SideTitles(showTitles: true),
-      ),
-    ),
-    lineBarsData: [
-      LineChartBarData(
-        spots: sortedData.asMap().entries.map((e) {
-          // use index as X for safe axis calculation
-          return FlSpot(e.key.toDouble(), e.value.weight);
-        }).toList(),
-        isCurved: true,
-        color: AppColors.accent,
-        barWidth: 3,
-      ),
-    ],
-  ));
+    );
   }
 }

@@ -16,8 +16,8 @@ class WeightTab extends StatelessWidget {
         WeightChart(
           weightData: [
             DateModel(date: DateTime(2025, 1, 1), weight: 80.5),
-            // DateModel(date: DateTime(2025, 2, 1), weight: 79.2),
-            // DateModel(date: DateTime(2025, 3, 1), weight: 78.8),
+            DateModel(date: DateTime(2025, 2, 1), weight: 79.2),
+            DateModel(date: DateTime(2025, 3, 1), weight: 78.8),
           ],
         ),
       ],
