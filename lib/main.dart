@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ppeso_mobile/core/styles.dart';
+import 'package:ppeso_mobile/features/history/pages/history_page.dart';
 import 'package:ppeso_mobile/features/login/widgets/login_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ppeso_mobile/features/meal/pages/meal_page.dart';
 import 'package:ppeso_mobile/features/profile/pages/profile_page.dart';
 import 'package:ppeso_mobile/shared/nav_layout.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart';
 
 void main() {
   runApp(const MyApp());
@@ -37,7 +40,7 @@ class MyApp extends StatelessWidget {
             ),
             GoRoute(
               path: '/history',
-              builder: (context, state) => const ProfilePage(),
+              builder: (context, state) => const HistoryPage(),
             ),
           ],
         ),
@@ -50,6 +53,29 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
       ),
       routerConfig: router,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en', ''), // English
+        Locale('pt', ''), // Portuguese
+        Locale('es', ''), // Portuguese
+      ],
+      localeResolutionCallback: (locale, supportedLocales) {
+        // Check if the device locale is supported
+        for (var supportedLocale in supportedLocales) {
+          if (supportedLocale.languageCode == locale?.languageCode) {
+            // Set intl default locale for formatting
+            Intl.defaultLocale = supportedLocale.languageCode;
+            return supportedLocale;
+          }
+        }
+        // Fallback
+        Intl.defaultLocale = supportedLocales.first.languageCode;
+        return supportedLocales.first;
+      },
     );
   }
 }
@@ -61,7 +87,6 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-
 class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
@@ -69,8 +94,8 @@ class _MyHomePageState extends State<MyHomePage> {
     //TODO Change back to 3seconds
     Future.delayed(const Duration(seconds: 0), () {
       if (!mounted) return;
-    //TODO Change back to login
-       context.replace('/profile');
+      //TODO Change back to login
+      context.replace('/profile');
     });
   }
 
