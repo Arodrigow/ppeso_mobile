@@ -71,8 +71,9 @@ class WeightChart extends StatelessWidget {
                   showTitles: true,
                   getTitlesWidget: (value, meta) {
                     final index = value.toInt();
-                    if (index < 0 || index >= sortedData.length)
+                    if (index < 0 || index >= sortedData.length) {
                       return const SizedBox();
+                    }
                     final date = sortedData[index].date;
                     return Text(
                       "${date.day}/${date.month}/${date.year}",
