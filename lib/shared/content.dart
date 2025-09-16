@@ -54,12 +54,12 @@ class UserTextFields {
   static const fixed = "Fixo (kCal)";
   static const fixedDesc = "Valor calórico diário fixo.";
   static const zigZag1 = "Zig Zag Fixo (kCal)";
-  static const zigZag1Desc = "Valor calórico varia entre dia da semana e fim de semana.";
+  static const zigZag1Desc =
+      "Valor calórico varia entre dia da semana e fim de semana.";
   static const zigZag2 = "Zig Zag Variável (kCal)";
   static const zigZag2Desc = "Valor calórico varia diariamente.";
   static const sCustom = "Customizado";
   static const sCustomDesc = "Entrar os valores diários manualmente.";
-
 }
 
 class ModalText {
@@ -71,10 +71,26 @@ class ModalText {
 class WeightTabContent {
   static const addWeightButton = "Adicionar ppeso";
   static const addDate = "Data";
-  static const addWeight= "PPeso";
-  static const addWeightData= "Adicionar";
-  static const closeWeightModal= "Cancelar";
-  static const historicWeightTitle= "Listar ppesos";
+  static const addWeight = "PPeso";
+  static const addWeightData = "Adicionar";
+  static const closeWeightModal = "Cancelar";
+  static const historicWeightTitle = "Listar ppesos";
+}
+
+class MealPageText {
+  static const newMealTabTitle = "Nova";
+  static const registerMealTabTitle = "Registrar";
+  static const newMealTitle = "Nova refeição";
+  static const registerMealTitle = "Registrar prato";
+}
+
+class NewMealTabText {
+  static const newMealItem = "Item";
+  static const newMealItemDesc = "Descreva seu item";
+  static const newMealItemUnitTitle = "Unidade";
+  static const newMealItemValueTitle = "Valor";
+  static const newMealItemSubmitBtn = "Enviar";
+  static const newMealItemBtn = "Adicionar item";
 }
 
 enum ExerciseLevel {
@@ -183,6 +199,67 @@ extension StrategyExtensions on Strategy {
         return UserTextFields.sCustomDesc;
       default:
         return UserTextFields.fixedDesc;
+    }
+  }
+}
+
+enum Measurements {
+  grams,
+  kilograms,
+  miligram,
+  litter,
+  milliliter,
+  teaSpn,
+  dessertSpn,
+  tableSpn,
+  cup,
+  pinch,
+  portion,
+  unit,
+}
+
+class MealMeasurementsText {
+  static const grams = "g";
+  static const kilograms = "kg";
+  static const miligram = "mg";
+  static const litter = "l";
+  static const milliliter = "ml";
+  static const teaSpn = "Colher de chá";
+  static const dessertSpn = "Colher de sobremesa";
+  static const tableSpn = "Colher de sopa";
+  static const cup = "Copo Americano";
+  static const pinch = "Pitada";
+  static const portion = "Porção";
+  static const unit = "Unidade";
+}
+
+extension MeasurementsExtensions on Measurements {
+  String get title {
+    switch (this) {
+      case Measurements.kilograms:
+        return MealMeasurementsText.kilograms;
+      case Measurements.miligram:
+        return MealMeasurementsText.miligram;
+      case Measurements.litter:
+        return MealMeasurementsText.litter;
+      case Measurements.milliliter:
+        return MealMeasurementsText.milliliter;
+      case Measurements.teaSpn:
+        return MealMeasurementsText.teaSpn;
+      case Measurements.dessertSpn:
+        return MealMeasurementsText.dessertSpn;
+      case Measurements.tableSpn:
+        return MealMeasurementsText.tableSpn;
+      case Measurements.cup:
+        return MealMeasurementsText.cup;
+      case Measurements.pinch:
+        return MealMeasurementsText.pinch;
+      case Measurements.portion:
+        return MealMeasurementsText.portion;
+      case Measurements.unit:
+        return MealMeasurementsText.unit;
+      default:
+        return MealMeasurementsText.grams;
     }
   }
 }
