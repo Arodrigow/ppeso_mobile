@@ -92,6 +92,11 @@ class NewMealTabText {
   static const newMealItemSubmitBtn = "Enviar";
   static const newMealItemBtn = "Adicionar item";
 }
+class HistoryTabText {
+  static const historyTabTitle = "Histórico";
+  static const dailyMeal = "Refeições do dia";
+  static const noDailyMeal = "Sem refeições cadastradas para hoje.";
+}
 
 enum ExerciseLevel {
   basal,

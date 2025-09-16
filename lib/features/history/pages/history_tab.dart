@@ -11,7 +11,7 @@ class HistoryTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return TabStructure(
       children: [
-        Text(MealPageText.registerMealTitle, style: AppTextStyles.title),
+        Text(HistoryTabText.historyTabTitle, style: AppTextStyles.title),
         const SizedBox(height: 20),
         CustomCalendar(),
       ],
