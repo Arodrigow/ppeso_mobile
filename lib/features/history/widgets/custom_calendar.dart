@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -15,7 +16,8 @@ class _CustomCalendar extends State<CustomCalendar> {
 
   // Example: Meals count per date
   final Map<DateTime, String> _dayNotes = {
-    DateTime.utc(2025, 9, 15): "2 meals",
+    DateTime.utc(2025, 9, 1): "2000",
+    DateTime.utc(2025, 9, 8): "2000",
     DateTime.utc(2025, 9, 15): "2 meals",
     DateTime.utc(2025, 9, 16): "1 meal",
     DateTime.utc(2025, 9, 18): "Workout",
@@ -23,6 +25,7 @@ class _CustomCalendar extends State<CustomCalendar> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context).toString();
     return TableCalendar(
       firstDay: DateTime.utc(2020, 1, 1),
       lastDay: DateTime.utc(2030, 12, 31),
@@ -37,9 +40,11 @@ class _CustomCalendar extends State<CustomCalendar> {
       headerStyle: const HeaderStyle(
         formatButtonVisible: false,
         titleCentered: true,
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-        )
+        titleTextStyle: TextStyle(
+          color: AppColors.appBackground,
+          fontWeight: FontWeight.bold,
+        ),
+        decoration: BoxDecoration(color: AppColors.primary),
       ),
       calendarStyle: const CalendarStyle(
         todayDecoration: BoxDecoration(
@@ -52,6 +57,33 @@ class _CustomCalendar extends State<CustomCalendar> {
         ),
       ),
       calendarBuilders: CalendarBuilders(
+        headerTitleBuilder: (context, day) {
+          return Center(
+            child: GestureDetector(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime(1900),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) {
+                  setState(() {
+                    _focusedDay = picked;
+                    _selectedDay = picked;
+                  });
+                }
+              },
+              child: Text(
+                DateFormat.yMMMM(locale).format(_focusedDay),
+                style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                  color: AppColors.widgetBackground,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          );
+        },
         defaultBuilder: (context, day, focusedDay) {
           final note = _dayNotes[DateTime.utc(day.year, day.month, day.day)];
           if (note != null) {
@@ -59,6 +91,11 @@ class _CustomCalendar extends State<CustomCalendar> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text("${day.day}"),
+                Text(
+                  note,
+                  style: const TextStyle(fontSize: 10, color: Colors.green),
+                  textAlign: TextAlign.center,
+                ),
                 Text(
                   note,
                   style: const TextStyle(fontSize: 10, color: Colors.green),
