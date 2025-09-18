@@ -20,7 +20,7 @@ class CustomModal {
           right: 16,
           top: 20,
         ),
-        child: child,
+        child: SingleChildScrollView(child: child),
       ),
     );
   }

@@ -72,9 +72,19 @@ class _HealthTabState extends ConsumerState<HealthTab> {
                       return Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text(
-                            ModalText.chooseOption,
-                            style: TextStyle(fontSize: 18),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                ModalText.chooseOption,
+                                style: TextStyle(fontSize: 18),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.close),
+                                onPressed: () =>
+                                    Navigator.pop(context), // closes the modal
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 20),
                           RadioGroup<ExerciseLevel>(
@@ -133,9 +143,19 @@ class _HealthTabState extends ConsumerState<HealthTab> {
                       return Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text(
-                            ModalText.chooseOption,
-                            style: TextStyle(fontSize: 18),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                ModalText.chooseOption,
+                                style: TextStyle(fontSize: 18),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.close),
+                                onPressed: () =>
+                                    Navigator.pop(context), // closes the modal
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 20),
                           RadioGroup<CalorieStrat>(
@@ -195,9 +215,19 @@ class _HealthTabState extends ConsumerState<HealthTab> {
                       return Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text(
-                            ModalText.chooseOption,
-                            style: TextStyle(fontSize: 18),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                ModalText.chooseOption,
+                                style: TextStyle(fontSize: 18),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.close),
+                                onPressed: () =>
+                                    Navigator.pop(context), // closes the modal
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 20),
                           RadioGroup<Strategy>(
