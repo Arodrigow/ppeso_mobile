@@ -234,6 +234,8 @@ class _HealthTabState extends State<HealthTab> {
           ],
         ),
         const SizedBox(height: 20),
+        SingleChildScrollView(scrollDirection: Axis.horizontal,
+        child: 
         Row(
           children: [
             Text("Valor diário (kCal)", style: AppTextStyles.bodyBold),
@@ -251,6 +253,8 @@ class _HealthTabState extends State<HealthTab> {
               ),
           ],
         ),
+        ),
+
         const SizedBox(height: 10),
         WeeklyGrid(days: daysOfWeek),
       ],

@@ -14,6 +14,7 @@ class WeeklyGrid extends StatelessWidget {
       crossAxisCount: columns,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: 0.5,
       children: days.map((day) {
         return Column(
           mainAxisSize: MainAxisSize.min,
