@@ -37,6 +37,9 @@ dependencies:
   fl_chart: ^1.1.0
   table_calendar: ^3.2.0
   intl: ^0.20.2
+  http: ^1.5.0
+  flutter_secure_storage: ^9.2.4
+  flutter_dotenv: ^6.0.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -61,6 +64,7 @@ dev_dependencies:
 flutter:
   assets:
     - assets/svg/svg_base.svg
+    - .env
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

@@ -1,4 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ppeso_mobile/core/styles.dart';
@@ -14,22 +19,59 @@ class LoginCard extends StatefulWidget {
 class _LoginCardState extends State<LoginCard> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final storage = FlutterSecureStorage();
 
-  void _login() {
-    // final email = emailController.text;
-    // final password = passwordController.text;
+  void _login() async {
+    final email = emailController.text;
+    final password = passwordController.text;
 
-    // if (email != "" || password != "") {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(
-    //       content: Text("Invalid email or password"),
-    //       backgroundColor: Colors.red,
-    //     ),
-    //   );
-    //   return;
-    // }
+    if (email == "" || password == "") {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Invalid email or password"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-    context.replace('/profile');
+    try {
+      final apiUrl = dotenv.env['API_URL'] ?? "https://fallback-url.com";
+      final recaptchCode = dotenv.env['RECAPTCHA_SECRET'] ?? "";
+      final response = await http.post(
+        Uri.parse("$apiUrl/auth/login"),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+          'captchaToken': recaptchCode,
+        }),
+      );
+      if (!mounted) return;
+
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        final token = data['access_token'];
+        print(token);
+
+        await storage.write(key: 'auth_token', value: token);
+
+        if (!mounted) return;
+        context.replace('/profile');
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Login failed: ${response.body}"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+      );
+    }
   }
 
   @override
@@ -87,7 +129,7 @@ class _LoginCardState extends State<LoginCard> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    // Handle login logic here
+                    // TODO: Add registration page
                   },
                   child: const Text(LoginText.registerButton),
                 ),

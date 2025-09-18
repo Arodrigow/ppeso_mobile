@@ -3,14 +3,19 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/features/history/pages/history_page.dart';
 import 'package:ppeso_mobile/features/login/widgets/login_page.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ppeso_mobile/features/meal/pages/meal_page.dart';
 import 'package:ppeso_mobile/features/profile/pages/profile_page.dart';
 import 'package:ppeso_mobile/shared/nav_layout.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
 
@@ -88,14 +93,24 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final storage = FlutterSecureStorage();
+
+  void checkLogin() async {
+    final token = await storage.read(key: 'auth_token');
+    if (token != null) {
+      if (!mounted) return;
+      context.replace('/profile');
+    } else {
+      if (!mounted) return;
+      context.replace('/login');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    //TODO Change back to 3seconds
-    Future.delayed(const Duration(seconds: 0), () {
-      if (!mounted) return;
-      //TODO Change back to login
-      context.replace('/profile');
+    Future.delayed(const Duration(seconds: 3), () {
+      checkLogin();
     });
   }
 
