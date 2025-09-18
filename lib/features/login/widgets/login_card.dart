@@ -47,10 +47,15 @@ class _LoginCardState extends State<LoginCard> {
               children: [
                 SvgPicture.asset(
                   "assets/svg/svg_base.svg",
-                  width: 100,
-                  height: 100,
+                  width: 90,
+                  height: 90,
                 ),
-                const Text("PPESO", style: AppTextStyles.ppesoTitle),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text("PPESO", style: AppTextStyles.ppesoTitle),
+                  ),
+                ),
               ],
             ),
             TextFormField(
