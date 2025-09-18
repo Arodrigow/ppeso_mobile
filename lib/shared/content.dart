@@ -95,6 +95,7 @@ class NewMealTabText {
   static const newMealItemSubmitBtn = "Enviar";
   static const newMealItemBtn = "Adicionar item";
 }
+
 class HistoryTabText {
   static const historyTabTitle = "Histórico";
   static const dailyMeal = "Refeições do dia";
@@ -102,93 +103,93 @@ class HistoryTabText {
 }
 
 enum ExerciseLevel {
-  basal,
-  sedentario,
-  leve,
-  moderado,
-  ativo,
-  muitoAtivo,
-  extremamenteAtivo,
+  Basal,
+  Sedentario,
+  Leve,
+  Moderado,
+  Ativo,
+  Muito_Ativo,
+  Extremamente_Ativo,
 }
 
 extension ExerciseLeveExtensions on ExerciseLevel {
   String get title {
     switch (this) {
-      case ExerciseLevel.basal:
+      case ExerciseLevel.Basal:
         return UserTextFields.basalExercies;
-      case ExerciseLevel.sedentario:
+      case ExerciseLevel.Sedentario:
         return UserTextFields.sedentaryExercies;
-      case ExerciseLevel.leve:
+      case ExerciseLevel.Leve:
         return UserTextFields.lowExercies;
-      case ExerciseLevel.moderado:
+      case ExerciseLevel.Moderado:
         return UserTextFields.mediumExercies;
-      case ExerciseLevel.ativo:
+      case ExerciseLevel.Ativo:
         return UserTextFields.activeExercies;
-      case ExerciseLevel.muitoAtivo:
+      case ExerciseLevel.Muito_Ativo:
         return UserTextFields.veryActiveExercies;
-      case ExerciseLevel.extremamenteAtivo:
+      case ExerciseLevel.Extremamente_Ativo:
         return UserTextFields.extremeActiveExercies;
     }
   }
 
   String get description {
     switch (this) {
-      case ExerciseLevel.basal:
+      case ExerciseLevel.Basal:
         return UserTextFields.basalExerciesDesc;
-      case ExerciseLevel.sedentario:
+      case ExerciseLevel.Sedentario:
         return UserTextFields.sedentaryExerciesDesc;
-      case ExerciseLevel.leve:
+      case ExerciseLevel.Leve:
         return UserTextFields.lowExerciesDesc;
-      case ExerciseLevel.moderado:
+      case ExerciseLevel.Moderado:
         return UserTextFields.mediumExerciesDesc;
-      case ExerciseLevel.ativo:
+      case ExerciseLevel.Ativo:
         return UserTextFields.activeExerciesDesc;
-      case ExerciseLevel.muitoAtivo:
+      case ExerciseLevel.Muito_Ativo:
         return UserTextFields.veryActiveExerciesDesc;
-      case ExerciseLevel.extremamenteAtivo:
+      case ExerciseLevel.Extremamente_Ativo:
         return UserTextFields.extremeActiveExerciesDesc;
     }
   }
 }
 
-enum CalorieStrat { manter, leve, moderado, extremo }
+enum CalorieStrat { Manter, Leve, Moderado, Extremo }
 
 extension CalorieStratExtensions on CalorieStrat {
   String get title {
     switch (this) {
-      case CalorieStrat.manter:
+      case CalorieStrat.Manter:
         return UserTextFields.maintainCalories;
-      case CalorieStrat.leve:
+      case CalorieStrat.Leve:
         return UserTextFields.lowCalories;
-      case CalorieStrat.moderado:
+      case CalorieStrat.Moderado:
         return UserTextFields.moderateCalories;
-      case CalorieStrat.extremo:
+      case CalorieStrat.Extremo:
         return UserTextFields.extremeCalories;
     }
   }
 
   String get description {
     switch (this) {
-      case CalorieStrat.manter:
+      case CalorieStrat.Manter:
         return UserTextFields.maintainCaloriesDesc;
-      case CalorieStrat.leve:
+      case CalorieStrat.Leve:
         return UserTextFields.lowCaloriesDesc;
-      case CalorieStrat.moderado:
+      case CalorieStrat.Moderado:
         return UserTextFields.moderateCaloriesDesc;
-      case CalorieStrat.extremo:
+      case CalorieStrat.Extremo:
         return UserTextFields.extremeCaloriesDesc;
     }
   }
 }
 
-enum Strategy { fixo, zigZag1, zigZag2, sCustom }
+enum Strategy { Fixo, ZigZag_UM, ZigZag_DOIS, sCustom }
 
 extension StrategyExtensions on Strategy {
   String get title {
     switch (this) {
-      case Strategy.zigZag1:
+      case Strategy.ZigZag_UM:
         return UserTextFields.zigZag1;
-      case Strategy.zigZag2:
+      case Strategy.ZigZag_DOIS:
         return UserTextFields.zigZag2;
       case Strategy.sCustom:
         return UserTextFields.sCustom;
@@ -199,9 +200,9 @@ extension StrategyExtensions on Strategy {
 
   String get description {
     switch (this) {
-      case Strategy.zigZag1:
+      case Strategy.ZigZag_UM:
         return UserTextFields.zigZag1Desc;
-      case Strategy.zigZag2:
+      case Strategy.ZigZag_DOIS:
         return UserTextFields.zigZag2Desc;
       case Strategy.sCustom:
         return UserTextFields.sCustomDesc;

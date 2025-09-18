@@ -1,23 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/features/profile/models/daily_value.dart';
 import 'package:ppeso_mobile/features/profile/widgets/custom_modal.dart';
 import 'package:ppeso_mobile/features/profile/widgets/weekly_grid.dart';
+import 'package:ppeso_mobile/providers/user_provider.dart';
 import 'package:ppeso_mobile/shared/content.dart';
 import 'package:ppeso_mobile/shared/divider.dart';
 import 'package:ppeso_mobile/shared/tab_structure.dart';
 
-class HealthTab extends StatefulWidget {
+class HealthTab extends ConsumerStatefulWidget {
   const HealthTab({super.key});
 
   @override
-  State<HealthTab> createState() => _HealthTabState();
+  ConsumerState<HealthTab> createState() => _HealthTabState();
 }
 
-class _HealthTabState extends State<HealthTab> {
-  ExerciseLevel? _selectedExerciseLevel = ExerciseLevel.leve;
-  CalorieStrat? _selectedCalRegime = CalorieStrat.extremo;
-  Strategy? _selectedStrategy = Strategy.zigZag2;
+class _HealthTabState extends ConsumerState<HealthTab> {
+  late ExerciseLevel? _selectedExerciseLevel;
+  late CalorieStrat? _selectedCalRegime;
+  late Strategy? _selectedStrategy;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = ref.read(userProvider);
+
+    _selectedExerciseLevel = _selectedExerciseLevel = ExerciseLevel.values
+        .firstWhere(
+          (e) => e.toString().split('.').last == user?['atividade'],
+          orElse: () => ExerciseLevel.Basal, // default value
+        );
+    _selectedCalRegime = _selectedCalRegime = CalorieStrat.values.firstWhere(
+      (e) => e.toString().split('.').last == user?['regime_calorico'],
+      orElse: () => CalorieStrat.Manter, // default value
+    );
+    _selectedStrategy = _selectedStrategy = Strategy.values.firstWhere(
+      (e) => e.toString().split('.').last == user?['estrategia'],
+      orElse: () => Strategy.Fixo, // default value
+    );
+  }
 
   final weeklyValue = 20000;
   final daysOfWeek = [
@@ -234,25 +256,25 @@ class _HealthTabState extends State<HealthTab> {
           ],
         ),
         const SizedBox(height: 20),
-        SingleChildScrollView(scrollDirection: Axis.horizontal,
-        child: 
-        Row(
-          children: [
-            Text("Valor diário (kCal)", style: AppTextStyles.bodyBold),
-            const SizedBox(width: 15),
-            if (_selectedStrategy == Strategy.sCustom)
-              ElevatedButton(
-                onPressed: () {},
-                child: Row(
-                  children: [
-                    Text("Customizar"),
-                    const SizedBox(width: 8),
-                    Icon(Icons.edit, color: AppColors.primary),
-                  ],
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              Text("Valor diário (kCal)", style: AppTextStyles.bodyBold),
+              const SizedBox(width: 15),
+              if (_selectedStrategy == Strategy.sCustom)
+                ElevatedButton(
+                  onPressed: () {},
+                  child: Row(
+                    children: [
+                      Text("Customizar"),
+                      const SizedBox(width: 8),
+                      Icon(Icons.edit, color: AppColors.primary),
+                    ],
+                  ),
                 ),
-              ),
-          ],
-        ),
+            ],
+          ),
         ),
 
         const SizedBox(height: 10),
