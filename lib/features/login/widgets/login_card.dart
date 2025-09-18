@@ -2,21 +2,23 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ppeso_mobile/core/styles.dart';
+import 'package:ppeso_mobile/providers/user_provider.dart';
 import 'package:ppeso_mobile/shared/content.dart';
 
-class LoginCard extends StatefulWidget {
+class LoginCard extends ConsumerStatefulWidget  {
   const LoginCard({super.key});
 
   @override
-  State<LoginCard> createState() => _LoginCardState();
+  ConsumerState<LoginCard> createState() => _LoginCardState();
 }
 
-class _LoginCardState extends State<LoginCard> {
+class _LoginCardState extends ConsumerState<LoginCard> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final storage = FlutterSecureStorage();
@@ -52,9 +54,9 @@ class _LoginCardState extends State<LoginCard> {
       if (response.statusCode == 201) {
         final data = jsonDecode(response.body);
         final token = data['access_token'];
-        print(token);
+        final user = data['user'];
 
-        await storage.write(key: 'auth_token', value: token);
+        await saveSession(ref, token, user);
 
         if (!mounted) return;
         context.replace('/profile');
