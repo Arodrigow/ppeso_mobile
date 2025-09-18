@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/providers/user_provider.dart';
 import 'package:ppeso_mobile/shared/content.dart';
-import 'package:ppeso_mobile/shared/double_json_parse.dart';
 import 'package:ppeso_mobile/shared/tab_structure.dart';
 
 class InfoTab extends ConsumerStatefulWidget {
@@ -104,7 +103,6 @@ class _InfoTabState extends ConsumerState<InfoTab> {
         TextFormField(
           keyboardType: TextInputType.number,
           initialValue:  user?['altura'].toString(),
-          enabled: false,
           decoration: InputDecoration(
             labelText: UserTextFields.height,
             enabledBorder: TextInputStyles.enabledDefault,
@@ -140,7 +138,6 @@ class _InfoTabState extends ConsumerState<InfoTab> {
         TextFormField(
           keyboardType: TextInputType.number,
           initialValue:  user?['peso_target'].toString(),
-          enabled: false,
           decoration: InputDecoration(
             labelText: UserTextFields.targetWeigth,
             enabledBorder: TextInputStyles.enabledDefault,
