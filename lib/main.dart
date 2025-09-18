@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/features/history/pages/history_page.dart';
 import 'package:ppeso_mobile/features/login/widgets/login_page.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ppeso_mobile/features/meal/pages/meal_page.dart';
 import 'package:ppeso_mobile/features/profile/pages/profile_page.dart';
@@ -11,47 +11,48 @@ import 'package:ppeso_mobile/shared/nav_layout.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'providers/user_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
   await dotenv.load(fileName: ".env");
-  runApp(const MyApp());
+
+  runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) {
-    final router = GoRouter(
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  late final GoRouter router;
+
+  @override
+  void initState() {
+    super.initState();
+
+    router = GoRouter(
       initialLocation: '/home',
       routes: [
         GoRoute(path: '/home', builder: (context, state) => const MyHomePage()),
         GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
         ShellRoute(
-          builder: (context, state, child) {
-            return MainLayout(child: child);
-          },
+          builder: (context, state, child) => MainLayout(child: child),
           routes: [
-            GoRoute(
-              path: '/profile',
-              builder: (context, state) => const ProfilePage(),
-            ),
-            GoRoute(
-              path: '/meal',
-              builder: (context, state) => const MealPage(),
-            ),
-            GoRoute(
-              path: '/history',
-              builder: (context, state) => const HistoryPage(),
-            ),
+            GoRoute(path: '/profile', builder: (context, state) => const ProfilePage()),
+            GoRoute(path: '/meal', builder: (context, state) => const MealPage()),
+            GoRoute(path: '/history', builder: (context, state) => const HistoryPage()),
           ],
         ),
       ],
     );
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'PPeso',
       theme: ThemeData(
@@ -64,20 +65,17 @@ class MyApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [
-        Locale('en', ''), // English
-        Locale('pt', ''), // Portuguese
-        Locale('es', ''), // Portuguese
+        Locale('en', ''),
+        Locale('pt', ''),
+        Locale('es', ''),
       ],
       localeResolutionCallback: (locale, supportedLocales) {
-        // Check if the device locale is supported
         for (var supportedLocale in supportedLocales) {
           if (supportedLocale.languageCode == locale?.languageCode) {
-            // Set intl default locale for formatting
             Intl.defaultLocale = supportedLocale.languageCode;
             return supportedLocale;
           }
         }
-        // Fallback
         Intl.defaultLocale = supportedLocales.first.languageCode;
         return supportedLocales.first;
       },
@@ -85,32 +83,28 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatefulWidget {
+class MyHomePage extends ConsumerStatefulWidget {
   const MyHomePage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  ConsumerState<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  final storage = FlutterSecureStorage();
-
-  void checkLogin() async {
-    final token = await storage.read(key: 'auth_token');
-    if (token != null) {
-      if (!mounted) return;
-      context.replace('/profile');
-    } else {
-      if (!mounted) return;
-      context.replace('/login');
-    }
-  }
-
+class _MyHomePageState extends ConsumerState<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 3), () {
-      checkLogin();
+    Future.delayed(const Duration(seconds: 3), () async {
+      await loadSession(ref);
+
+      final token = ref.read(authTokenProvider);
+      if (!mounted) return;
+
+      if (token != null) {
+        context.replace('/profile');
+      } else {
+        context.replace('/login');
+      }
     });
   }
 
