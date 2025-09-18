@@ -20,6 +20,9 @@ class UserTextFields {
   static const password = 'Senha';
   static const birthday = "Aniversário";
   static const height = "Altura (cm)";
+  static const initWeigth = "Peso Inicial (kg)";
+  static const nowWeigth = "Peso Atual (kg)";
+  static const targetWeigth = "Peso Alvo (kg)";
   //Exercise levels content
   static const activityLevel = "Nível de atividade: ";
   static const basalExercies = "Basal";
