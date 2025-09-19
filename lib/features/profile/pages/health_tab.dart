@@ -10,6 +10,7 @@ import 'package:ppeso_mobile/shared/calorie_calc.dart';
 import 'package:ppeso_mobile/shared/content.dart';
 import 'package:ppeso_mobile/shared/divider.dart';
 import 'package:ppeso_mobile/shared/parse_daily_value.dart';
+import 'package:ppeso_mobile/shared/requests/update_user.dart';
 import 'package:ppeso_mobile/shared/tab_structure.dart';
 
 class HealthTab extends ConsumerStatefulWidget {
@@ -39,6 +40,7 @@ class _HealthTabState extends ConsumerState<HealthTab> {
   Widget build(BuildContext context) {
     final userRaw = ref.watch(userProvider);
     final user = User.fromJson(userRaw);
+    final token = ref.read(authTokenProvider);
 
     int idade = calculateAge(user.aniversario);
     final weeklyValue = calorieCalculator(
@@ -64,7 +66,7 @@ class _HealthTabState extends ConsumerState<HealthTab> {
         manterCal,
         user.gender,
         _selectedCalRegime,
-        _selectedStrategy
+        _selectedStrategy,
       ),
     );
     return TabStructure(
@@ -178,6 +180,10 @@ class _HealthTabState extends ConsumerState<HealthTab> {
                               setState(() {
                                 _selectedCalRegime =
                                     value ?? CalorieStrat.Manter;
+                                updateUser(
+                                  user: user.copyWith(regimeCalorico: _selectedCalRegime),
+                                  token: token ?? '',
+                                );
                               });
                               Navigator.pop(context); // close modal
                             },

@@ -16,7 +16,7 @@ class User {
   Strategy estrategia;
   String gender;
   int version;
-  String createAt;
+  String createdAt;
 
   User({
     this.id = 0,
@@ -34,7 +34,7 @@ class User {
     this.estrategia = Strategy.Fixo,
     this.gender = '',
     this.version = 0,
-    this.createAt = '',
+    this.createdAt = '',
   });
 
   /// Factory constructor to parse JSON into User
@@ -66,7 +66,7 @@ class User {
       ),
       gender: json['gender'] ?? '',
       version: json['version'] ?? 0,
-      createAt: json['created_at'] ?? '',
+      createdAt: json['created_at'] ?? '',
     );
   }
 
@@ -88,7 +88,45 @@ class User {
       'estrategia': estrategia.toString().split('.').last,
       'gender': gender,
       'version': version,
-      'created_at': createAt,
+      'created_at': createdAt,
     };
+  }
+
+  User copyWith({
+  int? id,
+  String? email,
+  String? nome,
+  String? sobrenome,
+  String? aniversario,
+  double? pesoInit,
+  double? pesoNow,
+  double? pesoTarget,
+  int? altura,
+  ExerciseLevel? atividade,
+  String? role,
+  CalorieStrat? regimeCalorico,
+  Strategy? estrategia,
+  String? gender,
+  int? version,
+  String? createdAt,
+  }){
+    return User(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      nome: nome ?? this.nome,
+      sobrenome: sobrenome ?? this.sobrenome,
+      aniversario: aniversario ?? this.aniversario,
+      pesoInit: pesoInit ?? this.pesoInit,
+      pesoNow: pesoNow ?? this.pesoNow,
+      pesoTarget: pesoTarget ?? this.pesoTarget,
+      altura: altura ?? this.altura,
+      atividade: atividade ?? this.atividade,
+      role: role ?? this.role,
+      regimeCalorico: regimeCalorico ?? this.regimeCalorico,
+      estrategia: estrategia ?? this.estrategia,
+      gender: gender ?? this.gender,
+      version: version ?? this.version,
+      createdAt: createdAt ?? this.createdAt,
+    );
   }
 }
