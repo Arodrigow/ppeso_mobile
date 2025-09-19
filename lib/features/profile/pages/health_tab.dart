@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ppeso_mobile/core/styles.dart';
-import 'package:ppeso_mobile/features/profile/models/daily_value.dart';
+import 'package:ppeso_mobile/features/profile/models/user.dart';
 import 'package:ppeso_mobile/features/profile/widgets/custom_modal.dart';
 import 'package:ppeso_mobile/features/profile/widgets/weekly_grid.dart';
 import 'package:ppeso_mobile/providers/user_provider.dart';
+import 'package:ppeso_mobile/shared/calculate_age.dart';
+import 'package:ppeso_mobile/shared/calorie_calc.dart';
 import 'package:ppeso_mobile/shared/content.dart';
 import 'package:ppeso_mobile/shared/divider.dart';
+import 'package:ppeso_mobile/shared/parse_daily_value.dart';
 import 'package:ppeso_mobile/shared/tab_structure.dart';
 
 class HealthTab extends ConsumerStatefulWidget {
@@ -17,43 +20,53 @@ class HealthTab extends ConsumerStatefulWidget {
 }
 
 class _HealthTabState extends ConsumerState<HealthTab> {
-  late ExerciseLevel? _selectedExerciseLevel;
-  late CalorieStrat? _selectedCalRegime;
-  late Strategy? _selectedStrategy;
+  late ExerciseLevel _selectedExerciseLevel;
+  late CalorieStrat _selectedCalRegime;
+  late Strategy _selectedStrategy;
 
   @override
   void initState() {
     super.initState();
-    final user = ref.read(userProvider);
+    final userRaw = ref.read(userProvider);
+    final user = User.fromJson(userRaw);
 
-    _selectedExerciseLevel = _selectedExerciseLevel = ExerciseLevel.values
-        .firstWhere(
-          (e) => e.toString().split('.').last == user?['atividade'],
-          orElse: () => ExerciseLevel.Basal, // default value
-        );
-    _selectedCalRegime = _selectedCalRegime = CalorieStrat.values.firstWhere(
-      (e) => e.toString().split('.').last == user?['regime_calorico'],
-      orElse: () => CalorieStrat.Manter, // default value
-    );
-    _selectedStrategy = _selectedStrategy = Strategy.values.firstWhere(
-      (e) => e.toString().split('.').last == user?['estrategia'],
-      orElse: () => Strategy.Fixo, // default value
-    );
+    _selectedExerciseLevel = user.atividade;
+    _selectedCalRegime = user.regimeCalorico;
+    _selectedStrategy = user.estrategia;
   }
-
-  final weeklyValue = 20000;
-  final daysOfWeek = [
-    DailyValue(label: "Seg", value: 2120),
-    DailyValue(label: "Ter", value: 2190),
-    DailyValue(label: "Qua", value: 2150),
-    DailyValue(label: "Qui", value: 2180),
-    DailyValue(label: "Sex", value: 2100),
-    DailyValue(label: "Sáb", value: 1130),
-    DailyValue(label: "Dom", value: 1170),
-  ];
 
   @override
   Widget build(BuildContext context) {
+    final userRaw = ref.watch(userProvider);
+    final user = User.fromJson(userRaw);
+
+    int idade = calculateAge(user.aniversario);
+    final weeklyValue = calorieCalculator(
+      user.pesoNow,
+      user.altura,
+      idade,
+      user.gender,
+      _selectedExerciseLevel,
+      _selectedCalRegime,
+    );
+    final manterCal = calorieCalculator(
+      user.pesoNow,
+      user.altura,
+      idade,
+      user.gender,
+      _selectedExerciseLevel,
+      CalorieStrat.Manter,
+    );
+
+    final daysOfWeek = parseToDailyValue(
+      calculateZigZagCalories(
+        weeklyValue,
+        manterCal,
+        user.gender,
+        _selectedCalRegime,
+        _selectedStrategy
+      ),
+    );
     return TabStructure(
       children: [
         Text("Estratégia", style: AppTextStyles.title),
@@ -91,7 +104,8 @@ class _HealthTabState extends ConsumerState<HealthTab> {
                             groupValue: _selectedExerciseLevel,
                             onChanged: (ExerciseLevel? value) {
                               setState(() {
-                                _selectedExerciseLevel = value;
+                                _selectedExerciseLevel =
+                                    value ?? ExerciseLevel.Basal;
                               });
                               Navigator.pop(context);
                             },
@@ -121,7 +135,7 @@ class _HealthTabState extends ConsumerState<HealthTab> {
               },
               child: Row(
                 children: [
-                  Text("${_selectedExerciseLevel?.title}"),
+                  Text(_selectedExerciseLevel.title),
                   const SizedBox(width: 8),
                   Icon(Icons.edit, color: AppColors.primary),
                 ],
@@ -162,7 +176,8 @@ class _HealthTabState extends ConsumerState<HealthTab> {
                             groupValue: _selectedCalRegime,
                             onChanged: (CalorieStrat? value) {
                               setState(() {
-                                _selectedCalRegime = value;
+                                _selectedCalRegime =
+                                    value ?? CalorieStrat.Manter;
                               });
                               Navigator.pop(context); // close modal
                             },
@@ -193,7 +208,7 @@ class _HealthTabState extends ConsumerState<HealthTab> {
               },
               child: Row(
                 children: [
-                  Text("${_selectedCalRegime?.title}"),
+                  Text(_selectedCalRegime.title),
                   const SizedBox(width: 8),
                   Icon(Icons.edit, color: AppColors.primary),
                 ],
@@ -234,7 +249,7 @@ class _HealthTabState extends ConsumerState<HealthTab> {
                             groupValue: _selectedStrategy,
                             onChanged: (Strategy? value) {
                               setState(() {
-                                _selectedStrategy = value;
+                                _selectedStrategy = value ?? Strategy.Fixo;
                               });
                               Navigator.pop(context); // close modal
                             },
@@ -265,7 +280,7 @@ class _HealthTabState extends ConsumerState<HealthTab> {
               },
               child: Row(
                 children: [
-                  Text("${_selectedStrategy?.title}"),
+                  Text(_selectedStrategy.title),
                   const SizedBox(width: 8),
                   Icon(Icons.edit, color: AppColors.primary),
                 ],
@@ -281,8 +296,18 @@ class _HealthTabState extends ConsumerState<HealthTab> {
         const SizedBox(height: 25),
         Row(
           children: [
-            Text("Valor semanal (kCal): ", style: AppTextStyles.bodyBold),
-            Text(weeklyValue.toString(), style: AppTextStyles.body),
+            Text("Total semanal (kCal): ", style: AppTextStyles.bodyBold),
+            Text(
+              (weeklyValue * 7).ceil().toString(),
+              style: AppTextStyles.body,
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Text("Média diária (kCal): ", style: AppTextStyles.bodyBold),
+            Text(weeklyValue.ceil().toString(), style: AppTextStyles.body),
           ],
         ),
         const SizedBox(height: 20),

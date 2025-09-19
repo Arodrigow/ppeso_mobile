@@ -15,12 +15,7 @@ double calorieCalculator(
   return goal;
 }
 
-double basalMetabolicRate(
-  double weight,
-  int height,
-  int age,
-  String gender,
-) {
+double basalMetabolicRate(double weight, int height, int age, String gender) {
   if (gender == 'Male') {
     return 10 * weight + 6.25 * height - 5 * age + 5;
   }
@@ -74,7 +69,7 @@ WeekGoalMinimumType _weekGoalMinimum(
 ) {
   int weekGoal = manterCal;
   double fixedWeekGoal = calorieGoal * 7;
-  int typeOneWeekGoal = ((fixedWeekGoal - (2 * manterCal))).floor();
+  int typeOneWeekGoal = ((fixedWeekGoal - (2 * manterCal)) / 5).floor();
 
   if (typeOneWeekGoal < 1500 && gender == 'Male') {
     typeOneWeekGoal = 1500;
@@ -141,41 +136,40 @@ List<int> _generateWeeklyCalorieCycle(
   return zigzag;
 }
 
-class ZigZag {
-  List<int> typeOne;
-  List<int> typeTwo;
-
-  ZigZag({required this.typeOne, required this.typeTwo});
-}
-
-ZigZag calculateZigZagCalories(
-  int calorieGoal,
-  int manterCal,
+List<int> calculateZigZagCalories(
+  num calorieGoal,
+  double manterCal,
   String gender,
   CalorieStrat calorieStrat,
+  Strategy strategy,
 ) {
   WeekGoalMinimumType weekGoalMin = _weekGoalMinimum(
-    calorieGoal,
-    manterCal,
+    calorieGoal.ceil(),
+    manterCal.ceil(),
     gender,
   );
-  List<int> typeOne = [];
-  List<int> typeTwo = [];
+  List<int> typeOne = List.filled(7, 0);
+  List<int> typeTwo = List.filled(7, 0);
 
   for (var i = 0; i < 7; i++) {
-    if (i == 0 || i == 6) {
+    if (i == 0) {
+      // typeOne[i] = (weekGoalMin.weekGoal * 0.75).ceil();
+      typeOne[i] = (weekGoalMin.weekGoal).ceil();
+    } else if (i == 6) {
       typeOne[i] = weekGoalMin.weekGoal;
     } else {
-      typeOne[i] = weekGoalMin.typeOneWeekGoal;
+      // typeOne[i] = (weekGoalMin.typeOneWeekGoal * 1.05).ceil();
+      typeOne[i] = (weekGoalMin.typeOneWeekGoal ).ceil();
     }
 
     typeTwo = _generateWeeklyCalorieCycle(
-      manterCal,
+      manterCal.ceil(),
       gender,
       calorieStrat,
-      calorieGoal * 7,
+      calorieGoal.ceil() * 7,
     );
   }
 
-  return ZigZag(typeOne: typeOne, typeTwo: typeTwo);
+  if (strategy == Strategy.ZigZag_UM) return typeOne;
+  return typeTwo;
 }

@@ -6,10 +6,12 @@ class WeeklyGrid extends StatelessWidget {
   final List<DailyValue> days;
   final int columns;
 
+  
+
   const WeeklyGrid({super.key, required this.days, this.columns = 7});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) {    
     return GridView.count(
       crossAxisCount: columns,
       shrinkWrap: true,
