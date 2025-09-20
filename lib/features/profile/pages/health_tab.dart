@@ -9,6 +9,7 @@ import 'package:ppeso_mobile/shared/calculate_age.dart';
 import 'package:ppeso_mobile/shared/calorie_calc.dart';
 import 'package:ppeso_mobile/shared/content.dart';
 import 'package:ppeso_mobile/shared/divider.dart';
+import 'package:ppeso_mobile/shared/loading_message.dart';
 import 'package:ppeso_mobile/shared/parse_daily_value.dart';
 import 'package:ppeso_mobile/shared/requests/update_user.dart';
 import 'package:ppeso_mobile/shared/tab_structure.dart';
@@ -104,12 +105,49 @@ class _HealthTabState extends ConsumerState<HealthTab> {
                           const SizedBox(height: 20),
                           RadioGroup<ExerciseLevel>(
                             groupValue: _selectedExerciseLevel,
-                            onChanged: (ExerciseLevel? value) {
+                            onChanged: (ExerciseLevel? value) async {
                               setState(() {
                                 _selectedExerciseLevel =
                                     value ?? ExerciseLevel.Basal;
                               });
-                              Navigator.pop(context);
+                              final messenger = ScaffoldMessenger.of(context);
+                              final navigator = Navigator.of(
+                                context,
+                                rootNavigator: true,
+                              );
+
+                              final success = await withLoading(
+                                context,
+                                () async {
+                                  return await updateUser(
+                                    user: user.copyWith(
+                                      atividade: _selectedExerciseLevel,
+                                    ),
+                                    token: token ?? '',
+                                  );
+                                },
+                              );
+
+                              if (!success) {
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Failed to update user"),
+                                  ),
+                                );
+                              }
+
+                              if (success) {
+                                await saveSession(
+                                  ref,
+                                  token ?? '',
+                                  user
+                                      .copyWith(
+                                        atividade: _selectedExerciseLevel,
+                                      )
+                                      .toJson(),
+                                );
+                              }
+                              navigator.pop();
                             },
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,16 +214,48 @@ class _HealthTabState extends ConsumerState<HealthTab> {
                           const SizedBox(height: 20),
                           RadioGroup<CalorieStrat>(
                             groupValue: _selectedCalRegime,
-                            onChanged: (CalorieStrat? value) {
+                            onChanged: (CalorieStrat? value) async {
                               setState(() {
                                 _selectedCalRegime =
                                     value ?? CalorieStrat.Manter;
-                                updateUser(
-                                  user: user.copyWith(regimeCalorico: _selectedCalRegime),
-                                  token: token ?? '',
-                                );
                               });
-                              Navigator.pop(context); // close modal
+
+                              final messenger = ScaffoldMessenger.of(context);
+                              final navigator = Navigator.of(
+                                context,
+                                rootNavigator: true,
+                              );
+                              final success = await withLoading(
+                                context,
+                                () async {
+                                  return await updateUser(
+                                    user: user.copyWith(
+                                      regimeCalorico: _selectedCalRegime,
+                                    ),
+                                    token: token ?? '',
+                                  );
+                                },
+                              );
+
+                              if (!success) {
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Failed to update user"),
+                                  ),
+                                );
+                              }
+                              if (success) {
+                                await saveSession(
+                                  ref,
+                                  token ?? '',
+                                  user
+                                      .copyWith(
+                                        regimeCalorico: _selectedCalRegime,
+                                      )
+                                      .toJson(),
+                                );
+                              }
+                              navigator.pop(); // close modal
                             },
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,11 +323,49 @@ class _HealthTabState extends ConsumerState<HealthTab> {
                           const SizedBox(height: 20),
                           RadioGroup<Strategy>(
                             groupValue: _selectedStrategy,
-                            onChanged: (Strategy? value) {
+                            onChanged: (Strategy? value) async {
                               setState(() {
                                 _selectedStrategy = value ?? Strategy.Fixo;
                               });
-                              Navigator.pop(context); // close modal
+
+                              final messenger  = ScaffoldMessenger.of(context);
+                              final navigator = Navigator.of(
+                                context,
+                                rootNavigator: true,
+                              );
+
+                              final success = await withLoading(
+                                context,
+                                () async {
+                                  return await updateUser(
+                                    user: user.copyWith(
+                                      estrategia: _selectedStrategy,
+                                    ),
+                                    token: token ?? '',
+                                  );
+                                },
+                              );
+
+                              if (!success) {
+                                messenger .showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Failed to update user"),
+                                  ),
+                                );
+                              }
+                              if (success) {
+                                await saveSession(
+                                  ref,
+                                  token ?? '',
+                                  user
+                                      .copyWith(
+                                        estrategia: _selectedStrategy,
+                                      )
+                                      .toJson(),
+                                );
+                              }
+
+                              navigator.pop(); // close modal
                             },
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,

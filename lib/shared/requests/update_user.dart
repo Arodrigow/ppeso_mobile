@@ -11,9 +11,6 @@ Future<bool> updateUser({
   final url = Uri.parse("${dotenv.env['API_URL']}/user/${user.id}");
   final body = jsonEncode(user.toJson());
 
-  print(url);
-  print(body);
-
   try {
     final response = await http.put(
       url,
@@ -27,7 +24,6 @@ Future<bool> updateUser({
 
     if (response.statusCode == 200) {
       // Success
-      print("User updated: ${response.body}");
       return true;
     } else {
       print("Failed to update user: ${response.statusCode} - ${response.body}");
