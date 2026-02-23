@@ -1,10 +1,175 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ppeso_mobile/core/styles.dart';
+import 'package:ppeso_mobile/features/meal/models/recipe_analysis_model.dart';
+import 'package:ppeso_mobile/features/meal/models/user_recipe_model.dart';
+import 'package:ppeso_mobile/features/meal/providers/user_recipes_provider.dart';
+import 'package:ppeso_mobile/features/profile/widgets/custom_modal.dart';
+import 'package:ppeso_mobile/providers/user_provider.dart';
 import 'package:ppeso_mobile/shared/content.dart';
+import 'package:ppeso_mobile/shared/loading_message.dart';
+import 'package:ppeso_mobile/shared/requests/recipe_requests.dart';
 import 'package:ppeso_mobile/shared/tab_structure.dart';
 
-class RegisterMealTab extends StatelessWidget {
+class RegisterMealTab extends ConsumerStatefulWidget {
   const RegisterMealTab({super.key});
+
+  @override
+  ConsumerState<RegisterMealTab> createState() => _RegisterMealTabState();
+}
+
+class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _recipeController = TextEditingController();
+  RecipeAnalysisModel? _lastAnalysis;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _recipeController.dispose();
+    super.dispose();
+  }
+
+  void _clearForm() {
+    setState(() {
+      _titleController.clear();
+      _descriptionController.clear();
+      _recipeController.clear();
+      _lastAnalysis = null;
+    });
+  }
+
+  Future<void> _analyzeRecipe() async {
+    final title = _titleController.text.trim();
+    final description = _descriptionController.text.trim();
+    final recipe = _recipeController.text.trim();
+
+    if (title.isEmpty || description.isEmpty || recipe.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Fill title, description and recipe before analyzing.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final result = const RecipeAnalysisModel(
+      calories: 420,
+      carbo: 52,
+      proteins: 28,
+      fat: 14,
+      fibers: 8,
+    );
+
+    setState(() {
+      _lastAnalysis = result;
+    });
+    _showResultModal(result);
+  }
+
+  Future<void> _askSaveRecipe(RecipeAnalysisModel result) async {
+    await CustomModal.dialog(
+      context,
+      title: 'Save recipe',
+      message: 'Do you want to send this recipe to the database?',
+      cancelText: 'No',
+      confirmText: 'Yes',
+      onConfirm: () async {
+        try {
+          final token = ref.read(authTokenProvider);
+          await withLoading(
+            context,
+            () => saveRecipe(
+              title: _titleController.text.trim(),
+              description: _descriptionController.text.trim(),
+              recipe: _recipeController.text.trim(),
+              nutrition: result,
+              token: token,
+            ),
+          );
+
+          prependRecipeToUserList(
+            ref,
+            UserRecipeModel(
+              id: DateTime.now().millisecondsSinceEpoch.toString(),
+              title: _titleController.text.trim(),
+              description: _descriptionController.text.trim(),
+              recipe: _recipeController.text.trim(),
+            ),
+          );
+
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Recipe saved successfully.')),
+          );
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to save recipe: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  void _showResultModal(RecipeAnalysisModel result) {
+    CustomModal.bottomSheet(
+      context,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Nutritional values', style: AppTextStyles.subTitle),
+          const SizedBox(height: 16),
+          _nutritionRow(
+            'Calories',
+            '${result.calories.toStringAsFixed(2)} kcal',
+          ),
+          _nutritionRow('Carbo', '${result.carbo.toStringAsFixed(2)} g'),
+          _nutritionRow('Proteins', '${result.proteins.toStringAsFixed(2)} g'),
+          _nutritionRow('Fat', '${result.fat.toStringAsFixed(2)} g'),
+          _nutritionRow('Fibers', '${result.fibers.toStringAsFixed(2)} g'),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _askSaveRecipe(result);
+                },
+                style: ButtonStyles.defaultAcceptButton,
+                child: const Text('Send to database'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _nutritionRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: AppTextStyles.bodyBold),
+          Text(value, style: AppTextStyles.body),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,6 +177,57 @@ class RegisterMealTab extends StatelessWidget {
       children: [
         Text(MealPageText.registerMealTitle, style: AppTextStyles.title),
         const SizedBox(height: 20),
+        TextFormField(
+          controller: _titleController,
+          decoration: InputDecoration(
+            labelText: 'Title',
+            enabledBorder: TextInputStyles.enabledDefault,
+            focusedBorder: TextInputStyles.focusDefault,
+          ),
+        ),
+        const SizedBox(height: 15),
+        TextFormField(
+          controller: _descriptionController,
+          minLines: 2,
+          maxLines: 4,
+          decoration: InputDecoration(
+            labelText: 'Description',
+            enabledBorder: TextInputStyles.enabledDefault,
+            focusedBorder: TextInputStyles.focusDefault,
+          ),
+        ),
+        const SizedBox(height: 15),
+        TextFormField(
+          controller: _recipeController,
+          minLines: 6,
+          maxLines: 10,
+          decoration: InputDecoration(
+            labelText: 'Food recipe',
+            enabledBorder: TextInputStyles.enabledDefault,
+            focusedBorder: TextInputStyles.focusDefault,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            ElevatedButton.icon(
+              onPressed: _analyzeRecipe,
+              icon: const Icon(Icons.analytics),
+              label: const Text('Analyze'),
+              style: ButtonStyles.defaultAcceptButton,
+            ),
+            ElevatedButton.icon(
+              onPressed: _clearForm,
+              icon: const Icon(Icons.clear),
+              label: const Text(ProfilePageText.clearButton),
+            ),
+          ],
+        ),
+        if (_lastAnalysis != null) ...[
+          const SizedBox(height: 20),
+          Text('Latest analysis available', style: AppTextStyles.description),
+        ],
       ],
     );
   }

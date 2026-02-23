@@ -83,8 +83,10 @@ class WeightTabContent {
 class MealPageText {
   static const newMealTabTitle = "Nova";
   static const registerMealTabTitle = "Registrar";
+  static const recipesMealTabTitle = "Receitas";
   static const newMealTitle = "Nova refeição";
   static const registerMealTitle = "Registrar prato";
+  static const recipesMealTitle = "Receitas cadastradas";
 }
 
 class NewMealTabText {

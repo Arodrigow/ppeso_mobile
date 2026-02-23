@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/features/meal/models/meal_item_model.dart';
+import 'package:ppeso_mobile/features/meal/providers/user_recipes_provider.dart';
 import 'package:ppeso_mobile/shared/content.dart';
 
-class MealForm extends StatefulWidget {
+class MealForm extends ConsumerStatefulWidget {
   const MealForm({super.key});
 
   @override
-  State<MealForm> createState() => _MealFormState();
+  ConsumerState<MealForm> createState() => _MealFormState();
 }
 
-class _MealFormState extends State<MealForm> {
+class _MealFormState extends ConsumerState<MealForm> {
   final List<MealItemModel> _items = [];
 
   @override
   void initState() {
     super.initState();
-    _addItem(); // start with one item
+    _addItem();
   }
 
   @override
@@ -28,14 +30,18 @@ class _MealFormState extends State<MealForm> {
     super.dispose();
   }
 
-  void _addItem() {
+  void _addItem({String? initialName, bool asFirst = false}) {
+    final item = MealItemModel(
+      name: TextEditingController(text: initialName ?? ''),
+      quantity: TextEditingController(),
+    );
+
     setState(() {
-      _items.add(
-        MealItemModel(
-          name: TextEditingController(),
-          quantity: TextEditingController(),
-        ),
-      );
+      if (asFirst) {
+        _items.insert(0, item);
+      } else {
+        _items.add(item);
+      }
     });
   }
 
@@ -52,22 +58,82 @@ class _MealFormState extends State<MealForm> {
   void _submit() {
     final mealData = _items.map((item) {
       return {
-        "name": item.name.text.trim(),
-        "quantity": item.quantity.text.trim(),
-        "unit": item.unit.title,
+        'name': item.name.text.trim(),
+        'quantity': item.quantity.text.trim(),
+        'unit': item.unit.title,
       };
     }).toList();
 
-    debugPrint("Submitting meal data: $mealData");
+    debugPrint('Submitting meal data: $mealData');
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Meal submitted successfully")),
+      const SnackBar(content: Text('Meal submitted successfully')),
     );
 
     // TODO: send mealData to your backend
   }
 
+  Widget _buildNameAutocomplete(MealItemModel item, List<String> options) {
+    return Autocomplete<String>(
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        final query = textEditingValue.text.trim().toLowerCase();
+        if (query.isEmpty) {
+          return options;
+        }
+        return options.where((option) => option.toLowerCase().contains(query));
+      },
+      onSelected: (selected) {
+        item.name.value = TextEditingValue(
+          text: selected,
+          selection: TextSelection.collapsed(offset: selected.length),
+        );
+      },
+      fieldViewBuilder:
+          (context, textEditingController, focusNode, onFieldSubmitted) {
+            if (textEditingController.text != item.name.text) {
+              textEditingController.value = TextEditingValue(
+                text: item.name.text,
+                selection: TextSelection.collapsed(
+                  offset: item.name.text.length,
+                ),
+              );
+            }
+
+            return TextField(
+              controller: textEditingController,
+              focusNode: focusNode,
+              minLines: 1,
+              maxLines: null,
+              decoration: InputDecoration(
+                labelText: NewMealTabText.newMealItemDesc,
+                enabledBorder: TextInputStyles.enabledDefault,
+                focusedBorder: TextInputStyles.focusDefault,
+              ),
+              onChanged: (value) {
+                item.name.value = TextEditingValue(
+                  text: value,
+                  selection: TextSelection.collapsed(offset: value.length),
+                );
+              },
+            );
+          },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final recipeNames = ref
+        .watch(userRecipesProvider)
+        .map((r) => r.title)
+        .toList();
+
+    ref.listen<String?>(selectedRecipeForNewMealProvider, (previous, next) {
+      if (next == null || next.trim().isEmpty) {
+        return;
+      }
+      _addItem(initialName: next.trim(), asFirst: true);
+      ref.read(selectedRecipeForNewMealProvider.notifier).state = null;
+    });
+
     return Column(
       children: [
         Row(
@@ -95,20 +161,11 @@ class _MealFormState extends State<MealForm> {
                 child: Column(
                   children: [
                     Text(
-                      "${NewMealTabText.newMealItem} ${index + 1}",
+                      '${NewMealTabText.newMealItem} ${index + 1}',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),
-                    TextField(
-                      controller: item.name,
-                      minLines: 1,
-                      maxLines: null,
-                      decoration: InputDecoration(
-                        labelText: NewMealTabText.newMealItemDesc,
-                        enabledBorder: TextInputStyles.enabledDefault,
-                        focusedBorder: TextInputStyles.focusDefault,
-                      ),
-                    ),
+                    _buildNameAutocomplete(item, recipeNames),
                     const SizedBox(height: 10),
                     Row(
                       children: [
@@ -176,7 +233,7 @@ class _MealFormState extends State<MealForm> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             ElevatedButton.icon(
-              onPressed: _addItem,
+              onPressed: () => _addItem(),
               icon: const Icon(Icons.add),
               label: const Text(NewMealTabText.newMealItemBtn),
             ),
