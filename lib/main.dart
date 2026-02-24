@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/features/history/pages/history_page.dart';
 import 'package:ppeso_mobile/features/login/widgets/login_page.dart';
+import 'package:ppeso_mobile/features/login/widgets/register_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ppeso_mobile/features/meal/pages/meal_page.dart';
 import 'package:ppeso_mobile/features/profile/pages/profile_page.dart';
@@ -15,7 +16,7 @@ import 'providers/user_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
+  await dotenv.load(fileName: '.env');
 
   runApp(const ProviderScope(child: MyApp()));
 }
@@ -39,12 +40,25 @@ class _MyAppState extends ConsumerState<MyApp> {
       routes: [
         GoRoute(path: '/home', builder: (context, state) => const MyHomePage()),
         GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+        GoRoute(
+          path: '/register',
+          builder: (context, state) => const RegisterPage(),
+        ),
         ShellRoute(
           builder: (context, state, child) => MainLayout(child: child),
           routes: [
-            GoRoute(path: '/profile', builder: (context, state) => const ProfilePage()),
-            GoRoute(path: '/meal', builder: (context, state) => const MealPage()),
-            GoRoute(path: '/history', builder: (context, state) => const HistoryPage()),
+            GoRoute(
+              path: '/profile',
+              builder: (context, state) => const ProfilePage(),
+            ),
+            GoRoute(
+              path: '/meal',
+              builder: (context, state) => const MealPage(),
+            ),
+            GoRoute(
+              path: '/history',
+              builder: (context, state) => const HistoryPage(),
+            ),
           ],
         ),
       ],
@@ -116,12 +130,12 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SvgPicture.asset(
-              "assets/svg/svg_base.svg",
+              'assets/svg/svg_base.svg',
               width: 150,
               height: 150,
             ),
             const Text(
-              "Bem vindo(a) ao PPeso",
+              'Bem vindo(a) ao PPeso',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 30),
