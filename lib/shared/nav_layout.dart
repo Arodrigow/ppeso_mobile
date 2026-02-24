@@ -31,9 +31,15 @@ class MainLayout extends StatelessWidget {
           }
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil"),
-          BottomNavigationBarItem(icon: Icon(Icons.food_bank), label: "Refeição"),
-          BottomNavigationBarItem(icon: Icon(Icons.history_outlined), label: "Histórico"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.food_bank),
+            label: 'Nutrição',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history_outlined),
+            label: 'Histórico',
+          ),
         ],
       ),
     );

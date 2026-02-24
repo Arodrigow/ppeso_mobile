@@ -81,6 +81,8 @@ class WeightTabContent {
 }
 
 class MealPageText {
+  static const dailyNutritionTabTitle = "Nutrição";
+  static const dailyNutritionTitle = "Resumo diário";
   static const newMealTabTitle = "Nova";
   static const registerMealTabTitle = "Registrar";
   static const recipesMealTabTitle = "Receitas";

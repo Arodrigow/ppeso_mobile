@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ppeso_mobile/core/styles.dart';
+import 'package:ppeso_mobile/features/meal/pages/daily_nutrition_tab.dart';
 import 'package:ppeso_mobile/features/meal/pages/new_meal_tab.dart';
 import 'package:ppeso_mobile/features/meal/pages/recipes_meal_tab.dart';
 import 'package:ppeso_mobile/features/meal/pages/register_meal_tab.dart';
@@ -11,13 +12,14 @@ class MealPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: Text('PPeso', style: AppTextStyles.titleWhite),
           backgroundColor: AppColors.primary,
           bottom: const TabBar(
             tabs: [
+              Tab(text: MealPageText.dailyNutritionTabTitle),
               Tab(text: MealPageText.newMealTabTitle),
               Tab(text: MealPageText.registerMealTabTitle),
               Tab(text: MealPageText.recipesMealTabTitle),
@@ -28,7 +30,12 @@ class MealPage extends StatelessWidget {
           ),
         ),
         body: const TabBarView(
-          children: [NewMealTab(), RegisterMealTab(), RecipesMealTab()],
+          children: [
+            DailyNutritionTab(),
+            NewMealTab(),
+            RegisterMealTab(),
+            RecipesMealTab(),
+          ],
         ),
       ),
     );
