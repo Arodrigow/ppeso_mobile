@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:ppeso_mobile/core/styles.dart';
@@ -5,9 +7,15 @@ import 'package:ppeso_mobile/features/profile/models/date_model.dart';
 
 class WeightChart extends StatelessWidget {
   final List<DateModel> weightData;
+  final double? targetWeight;
   final double height;
 
-  const WeightChart({super.key, required this.weightData, this.height = 250});
+  const WeightChart({
+    super.key,
+    required this.weightData,
+    this.targetWeight,
+    this.height = 250,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +36,26 @@ class WeightChart extends StatelessWidget {
         .map((e) => e.weight)
         .reduce((a, b) => a > b ? a : b);
 
-    final minY = minWeight - 1;
-    final maxY = (maxWeight == minWeight) ? minWeight + 2 : maxWeight + 1;
+    final target = targetWeight;
+    final minRef = target != null
+        ? (target < minWeight ? target : minWeight)
+        : minWeight;
+    final maxRef = target != null
+        ? (target > maxWeight ? target : maxWeight)
+        : maxWeight;
+    final minY = minRef - 1;
+    final maxY = (maxRef == minRef) ? minRef + 2 : maxRef + 1;
+    final yRange = maxY - minY;
+    final xStep = sortedData.length <= 6
+        ? 1
+        : ((sortedData.length - 1) / 5).ceil();
+
+    final yLabels = <double>[
+      for (int i = 0; i <= 5; i++) minY + (yRange * (i / 5)),
+      if (target != null) target,
+    ];
+    const eps = 0.15;
+    final yInterval = math.max(0.1, yRange / 60);
 
     return SizedBox(
       height: height,
@@ -74,9 +100,13 @@ class WeightChart extends StatelessWidget {
                     if (index < 0 || index >= sortedData.length) {
                       return const SizedBox();
                     }
+                    final isLast = index == sortedData.length - 1;
+                    if (!isLast && index % xStep != 0) {
+                      return const SizedBox();
+                    }
                     final date = sortedData[index].date;
                     return Text(
-                      "${date.day}/${date.month}/${date.year}",
+                      "${date.day}/${date.month}",
                       style: const TextStyle(fontSize: 10),
                     );
                   },
@@ -87,11 +117,27 @@ class WeightChart extends StatelessWidget {
                 sideTitles: SideTitles(
                   showTitles: true,
                   reservedSize: 40,
-                  interval: 1,
-                  getTitlesWidget: (value, meta) => Text(
-                    value.toStringAsFixed(1),
-                    style: const TextStyle(fontSize: 10),
-                  ),
+                  interval: yInterval,
+                  getTitlesWidget: (value, meta) {
+                    final isTarget =
+                        target != null && (value - target).abs() <= eps;
+                    final shouldShowLabel = yLabels.any(
+                      (label) => (value - label).abs() <= eps,
+                    );
+                    if (!isTarget && !shouldShowLabel) {
+                      return const SizedBox();
+                    }
+                    return Text(
+                      value.toStringAsFixed(1),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: isTarget ? Colors.red : Colors.black,
+                        fontWeight: isTarget
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    );
+                  },
                 ),
               ),
               rightTitles: AxisTitles(
@@ -111,6 +157,17 @@ class WeightChart extends StatelessWidget {
                 width: 1,
               ),
             ),
+            extraLinesData: target == null
+                ? const ExtraLinesData()
+                : ExtraLinesData(
+                    horizontalLines: [
+                      HorizontalLine(
+                        y: target,
+                        color: Colors.red,
+                        strokeWidth: 1.1,
+                      ),
+                    ],
+                  ),
             lineBarsData: [
               LineChartBarData(
                 spots: sortedData

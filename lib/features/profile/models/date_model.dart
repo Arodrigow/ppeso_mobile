@@ -1,6 +1,7 @@
 class DateModel {
+  final int? id;
   final DateTime date;
   final double weight;
 
-  DateModel({required this.date, required this.weight});
+  DateModel({this.id, required this.date, required this.weight});
 }

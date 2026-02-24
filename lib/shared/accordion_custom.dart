@@ -5,7 +5,9 @@ import 'package:ppeso_mobile/shared/content.dart';
 
 class AccordionCustom extends StatefulWidget {
   final List<DateModel> weightData;
-  const AccordionCustom({super.key, required this.weightData});
+  final Future<void> Function(DateModel weight)? onDelete;
+
+  const AccordionCustom({super.key, required this.weightData, this.onDelete});
 
   @override
   State<AccordionCustom> createState() => _AccordionCustomState();
@@ -44,9 +46,13 @@ class _AccordionCustomState extends State<AccordionCustom> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text("${weight.date.day}/${weight.date.month}/${weight.date.year}: ${weight.weight}"),
+                        Text(
+                          "${weight.date.day}/${weight.date.month}/${weight.date.year}: ${weight.weight}",
+                        ),
                         ElevatedButton(
-                          onPressed: () {},
+                          onPressed: widget.onDelete == null
+                              ? null
+                              : () async => widget.onDelete!(weight),
                           style: ButtonStyle(
                             backgroundColor: WidgetStateProperty.all(
                               Colors.red,
