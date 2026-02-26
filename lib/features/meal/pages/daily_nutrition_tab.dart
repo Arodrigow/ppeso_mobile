@@ -318,10 +318,22 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(left, style: AppTextStyles.bodyBold),
-          Text(right, style: AppTextStyles.body),
+          Expanded(
+            flex: 4,
+            child: Text(left, style: AppTextStyles.bodyBold, softWrap: true),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 6,
+            child: Text(
+              right,
+              style: AppTextStyles.body,
+              textAlign: TextAlign.right,
+              softWrap: true,
+            ),
+          ),
         ],
       ),
     );
