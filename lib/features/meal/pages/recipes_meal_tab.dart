@@ -11,7 +11,14 @@ import 'package:ppeso_mobile/shared/requests/recipe_requests.dart';
 import 'package:ppeso_mobile/shared/tab_structure.dart';
 
 class RecipesMealTab extends ConsumerStatefulWidget {
-  const RecipesMealTab({super.key});
+  final void Function(String? initialFirstItem)? onOpenNewMeal;
+  final VoidCallback? onOpenRegisterRecipe;
+
+  const RecipesMealTab({
+    super.key,
+    this.onOpenNewMeal,
+    this.onOpenRegisterRecipe,
+  });
 
   @override
   ConsumerState<RecipesMealTab> createState() => _RecipesMealTabState();
@@ -27,7 +34,7 @@ class _RecipesMealTabState extends ConsumerState<RecipesMealTab> {
     Future.microtask(_loadRecipes);
   }
 
-  Future<void> _loadRecipes() async {
+  Future<void> _loadRecipes({bool forceRefresh = false}) async {
     final user = ref.read(userProvider);
     final token = ref.read(authTokenProvider);
     final userId = _parseUserId(user?['id']);
@@ -44,7 +51,11 @@ class _RecipesMealTabState extends ConsumerState<RecipesMealTab> {
     });
 
     try {
-      final recipes = await getUserRecipes(userId: userId, token: token);
+      final recipes = await getUserRecipes(
+        userId: userId,
+        token: token,
+        forceRefresh: forceRefresh,
+      );
       if (!mounted) return;
       setUserRecipes(ref, recipes);
       setState(() => _isLoading = false);
@@ -106,12 +117,24 @@ class _RecipesMealTabState extends ConsumerState<RecipesMealTab> {
           children: [
             Text(MealPageText.recipesMealTitle, style: AppTextStyles.title),
             IconButton(
-              onPressed: _isLoading ? null : _loadRecipes,
+              onPressed: _isLoading
+                  ? null
+                  : () => _loadRecipes(forceRefresh: true),
               icon: const Icon(Icons.refresh),
             ),
           ],
         ),
         const SizedBox(height: 20),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: ElevatedButton.icon(
+            onPressed: widget.onOpenRegisterRecipe,
+            style: ButtonStyles.defaultAcceptButton,
+            icon: const Icon(Icons.edit),
+            label: const Text('Nova'),
+          ),
+        ),
+        const SizedBox(height: 16),
         if (_isLoading) const LinearProgressIndicator(),
         if (_error != null && !_isLoading)
           Text(_error!, style: const TextStyle(color: Colors.red)),
@@ -160,9 +183,7 @@ class _RecipesMealTabState extends ConsumerState<RecipesMealTab> {
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: () {
-                    ref.read(selectedRecipeForNewMealProvider.notifier).state =
-                        recipe.title;
-                    DefaultTabController.of(context).animateTo(1);
+                    widget.onOpenNewMeal?.call(recipe.title);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('"${recipe.title}" added to New Meal.'),
@@ -171,7 +192,7 @@ class _RecipesMealTabState extends ConsumerState<RecipesMealTab> {
                   },
                   style: ButtonStyles.defaultAcceptButton,
                   icon: const Icon(Icons.add),
-                  label: const Text('Add as first item'),
+                  label: const Text('Adicionar à refeição'),
                 ),
               ],
             ),
@@ -201,12 +222,10 @@ class _RecipesMealTabState extends ConsumerState<RecipesMealTab> {
               ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  ref.read(selectedRecipeForNewMealProvider.notifier).state =
-                      recipe.title;
-                  DefaultTabController.of(context).animateTo(1);
+                  widget.onOpenNewMeal?.call(recipe.title);
                 },
                 style: ButtonStyles.defaultAcceptButton,
-                child: const Text('Add as first item'),
+                child: const Text('Adicionar à refeição'),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),

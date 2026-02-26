@@ -8,7 +8,9 @@ import 'package:ppeso_mobile/shared/requests/nutrition_daily_requests.dart';
 import 'package:ppeso_mobile/shared/tab_structure.dart';
 
 class DailyNutritionTab extends ConsumerStatefulWidget {
-  const DailyNutritionTab({super.key});
+  final VoidCallback? onOpenNewMeal;
+
+  const DailyNutritionTab({super.key, this.onOpenNewMeal});
 
   @override
   ConsumerState<DailyNutritionTab> createState() => _DailyNutritionTabState();
@@ -25,7 +27,7 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
     Future.microtask(_load);
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool forceRefresh = false}) async {
     final user = ref.read(userProvider);
     final token = ref.read(authTokenProvider);
     final userId = _parseUserId(user?['id']);
@@ -45,6 +47,7 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
       final data = await getTodayNutritionDashboard(
         userId: userId,
         token: token,
+        forceRefresh: forceRefresh,
       );
       if (!mounted) return;
       setState(() {
@@ -77,13 +80,24 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
           children: [
             Text(MealPageText.dailyNutritionTitle, style: AppTextStyles.title),
             IconButton(
-              onPressed: _isLoading ? null : _load,
+              onPressed: _isLoading ? null : () => _load(forceRefresh: true),
               icon: const Icon(Icons.refresh),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        Text('Hoje: $dayLabel', style: AppTextStyles.bodyBold),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Hoje: $dayLabel', style: AppTextStyles.bodyBold),
+            ElevatedButton.icon(
+              onPressed: widget.onOpenNewMeal,
+              style: ButtonStyles.defaultAcceptButton,
+              icon: const Icon(Icons.add),
+              label: const Text('Nova Refeicao'),
+            ),
+          ],
+        ),
         const SizedBox(height: 20),
         if (_isLoading) const LinearProgressIndicator(),
         if (_error != null && !_isLoading)
@@ -281,7 +295,7 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
       if (!mounted) return;
       if (!sheetContext.mounted) return;
       Navigator.of(sheetContext).pop();
-      await _load();
+      await _load(forceRefresh: true);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Refeição deletada com sucesso.')),

@@ -133,9 +133,13 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
           prependRecipeToUserList(ref, createdRecipe);
 
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Recipe saved successfully.')),
-          );
+          final popped = await Navigator.of(context).maybePop();
+          if (!mounted) return;
+          if (!popped) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Recipe saved successfully.')),
+            );
+          }
         } catch (e) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(

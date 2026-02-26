@@ -5,7 +5,9 @@ import 'package:ppeso_mobile/shared/content.dart';
 import 'package:ppeso_mobile/shared/tab_structure.dart';
 
 class NewMealTab extends StatefulWidget {
-  const NewMealTab({super.key});
+  final String? initialFirstItem;
+
+  const NewMealTab({super.key, this.initialFirstItem});
 
   @override
   State<NewMealTab> createState() => _NewMealTabState();
@@ -18,7 +20,7 @@ class _NewMealTabState extends State<NewMealTab> {
       children: [
         Text(MealPageText.newMealTitle, style: AppTextStyles.title),
         const SizedBox(height: 20),
-        MealForm(),
+        MealForm(initialFirstItem: widget.initialFirstItem),
       ],
     );
   }

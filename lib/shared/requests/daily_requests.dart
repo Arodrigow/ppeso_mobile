@@ -4,10 +4,30 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+const Duration _todayDailyCacheTtl = Duration(seconds: 30);
+final Map<String, _CachedDaily> _todayDailyCache = {};
+
+class _CachedDaily {
+  final DateTime timestamp;
+  final Map<String, dynamic>? data;
+
+  const _CachedDaily({required this.timestamp, required this.data});
+}
+
 Future<Map<String, dynamic>?> getTodayDaily({
   required int userId,
   required String token,
+  bool forceRefresh = false,
 }) async {
+  final cacheKey = _todayDailyKey(userId, DateTime.now());
+  if (!forceRefresh) {
+    final cached = _todayDailyCache[cacheKey];
+    if (cached != null &&
+        DateTime.now().difference(cached.timestamp) < _todayDailyCacheTtl) {
+      return cached.data;
+    }
+  }
+
   final apiUrl =
       dotenv.env['NEXT_PUBLIC_API_URL'] ?? dotenv.env['API_URL'] ?? '';
   final dateIsoUtc = _utcMidnightIsoFromLocalDay(DateTime.now());
@@ -26,12 +46,27 @@ Future<Map<String, dynamic>?> getTodayDaily({
   }
 
   final parsed = jsonDecode(response.body);
-  if (parsed is Map<String, dynamic>) return parsed;
+  if (parsed is Map<String, dynamic>) {
+    _todayDailyCache[cacheKey] = _CachedDaily(
+      timestamp: DateTime.now(),
+      data: parsed,
+    );
+    return parsed;
+  }
   if (parsed is List &&
       parsed.isNotEmpty &&
       parsed.first is Map<String, dynamic>) {
-    return parsed.first as Map<String, dynamic>;
+    final mapped = parsed.first as Map<String, dynamic>;
+    _todayDailyCache[cacheKey] = _CachedDaily(
+      timestamp: DateTime.now(),
+      data: mapped,
+    );
+    return mapped;
   }
+  _todayDailyCache[cacheKey] = _CachedDaily(
+    timestamp: DateTime.now(),
+    data: null,
+  );
   return null;
 }
 
@@ -74,6 +109,7 @@ Future<void> ensureDailyForToday({
   }
 
   await prefs.setString(persistedKey, localDayKey);
+  _todayDailyCache.remove(_todayDailyKey(userId, DateTime.now()));
 }
 
 Map<String, String> _authHeaders(String token) => {
@@ -96,4 +132,11 @@ String _utcMidnightIsoFromLocalDay(DateTime localDate) {
     localDate.day,
   );
   return utcMidnight.toIso8601String();
+}
+
+String _todayDailyKey(int userId, DateTime localDate) {
+  final y = localDate.year.toString().padLeft(4, '0');
+  final m = localDate.month.toString().padLeft(2, '0');
+  final d = localDate.day.toString().padLeft(2, '0');
+  return 'today_daily_${userId}_$y$m$d';
 }

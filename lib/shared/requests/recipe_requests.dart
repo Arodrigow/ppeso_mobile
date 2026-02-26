@@ -5,13 +5,24 @@ import 'package:http/http.dart' as http;
 import 'package:ppeso_mobile/features/meal/models/recipe_analysis_model.dart';
 import 'package:ppeso_mobile/features/meal/models/user_recipe_model.dart';
 
+const Duration _recipesCacheTtl = Duration(minutes: 3);
+final Map<String, _CachedRecipes> _userRecipesCache = {};
+
+class _CachedRecipes {
+  final DateTime timestamp;
+  final List<UserRecipeModel> data;
+
+  const _CachedRecipes({required this.timestamp, required this.data});
+}
+
 Future<RecipeAnalysisModel> analyzeRecipe({
   required String title,
   required String description,
   required String recipe,
   String? token,
 }) async {
-  final baseUrl = dotenv.env['API_URL'] ?? '';
+  final baseUrl =
+      dotenv.env['NEXT_PUBLIC_API_URL'] ?? dotenv.env['API_URL'] ?? '';
   final endpoint =
       dotenv.env['RECIPE_ANALYZE_ENDPOINT'] ?? '$baseUrl/recipe/analyze';
   final response = await http.post(
@@ -101,23 +112,37 @@ Future<UserRecipeModel> saveRecipe({
   if (parsed is Map<String, dynamic>) {
     final recipePayload = _extractItem(parsed);
     if (recipePayload != null) {
+      _invalidateUserRecipesCache(userId);
       return UserRecipeModel.fromJson(recipePayload);
     }
   }
 
-  return UserRecipeModel(
+  final created = UserRecipeModel(
     id: DateTime.now().millisecondsSinceEpoch.toString(),
     title: title,
     description: description,
     recipe: recipe,
   );
+  _invalidateUserRecipesCache(userId);
+  return created;
 }
 
 Future<List<UserRecipeModel>> getUserRecipes({
   required int userId,
   required String token,
+  bool forceRefresh = false,
 }) async {
-  final baseUrl = dotenv.env['API_URL'] ?? '';
+  final cacheKey = _recipesKey(userId);
+  if (!forceRefresh) {
+    final cached = _userRecipesCache[cacheKey];
+    if (cached != null &&
+        DateTime.now().difference(cached.timestamp) < _recipesCacheTtl) {
+      return cached.data;
+    }
+  }
+
+  final baseUrl =
+      dotenv.env['NEXT_PUBLIC_API_URL'] ?? dotenv.env['API_URL'] ?? '';
   final response = await http
       .get(
         Uri.parse('$baseUrl/recipe/$userId'),
@@ -137,7 +162,12 @@ Future<List<UserRecipeModel>> getUserRecipes({
 
   final parsed = jsonDecode(response.body);
   final list = _extractList(parsed);
-  return list.map(UserRecipeModel.fromJson).toList();
+  final mapped = list.map(UserRecipeModel.fromJson).toList();
+  _userRecipesCache[cacheKey] = _CachedRecipes(
+    timestamp: DateTime.now(),
+    data: mapped,
+  );
+  return mapped;
 }
 
 Future<void> deleteRecipe({
@@ -161,6 +191,16 @@ Future<void> deleteRecipe({
       'Failed to delete recipe (${response.statusCode}): ${response.body}',
     );
   }
+
+  _invalidateUserRecipesCache(userId);
+}
+
+void clearUserRecipesCache({int? userId}) {
+  if (userId != null) {
+    _invalidateUserRecipesCache(userId);
+    return;
+  }
+  _userRecipesCache.clear();
 }
 
 List<Map<String, dynamic>> _extractList(dynamic value) {
@@ -191,4 +231,10 @@ Map<String, dynamic>? _extractItem(Map<String, dynamic> value) {
     return value['recipe'] as Map<String, dynamic>;
   }
   return value;
+}
+
+String _recipesKey(int userId) => 'recipes_$userId';
+
+void _invalidateUserRecipesCache(int userId) {
+  _userRecipesCache.remove(_recipesKey(userId));
 }

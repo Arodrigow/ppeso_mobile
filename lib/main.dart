@@ -126,7 +126,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
           }
         }
         if (!mounted) return;
-        context.replace('/profile');
+        context.replace('/meal');
       } else {
         context.replace('/login');
       }

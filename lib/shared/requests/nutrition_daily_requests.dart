@@ -3,6 +3,26 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
+const Duration _dashboardCacheTtl = Duration(seconds: 45);
+const Duration _calendarCacheTtl = Duration(minutes: 5);
+
+final Map<String, _CachedDashboard> _dashboardCache = {};
+final Map<String, _CachedCalendar> _calendarCache = {};
+
+class _CachedDashboard {
+  final DateTime timestamp;
+  final NutritionDailyDashboard data;
+
+  const _CachedDashboard({required this.timestamp, required this.data});
+}
+
+class _CachedCalendar {
+  final DateTime timestamp;
+  final List<DailyCalendarSummary> data;
+
+  const _CachedCalendar({required this.timestamp, required this.data});
+}
+
 class NutritionDailySummary {
   final DateTime date;
   final double dailyLimit;
@@ -100,11 +120,13 @@ class DailyCalendarSummary {
 Future<NutritionDailyDashboard> getTodayNutritionDashboard({
   required int userId,
   required String token,
+  bool forceRefresh = false,
 }) async {
   return getNutritionDashboardByDate(
     userId: userId,
     token: token,
     localDate: DateTime.now(),
+    forceRefresh: forceRefresh,
   );
 }
 
@@ -112,7 +134,17 @@ Future<NutritionDailyDashboard> getNutritionDashboardByDate({
   required int userId,
   required String token,
   required DateTime localDate,
+  bool forceRefresh = false,
 }) async {
+  final dashboardKey = _dashboardKey(userId, localDate);
+  if (!forceRefresh) {
+    final cached = _dashboardCache[dashboardKey];
+    if (cached != null &&
+        DateTime.now().difference(cached.timestamp) < _dashboardCacheTtl) {
+      return cached.data;
+    }
+  }
+
   final apiUrl =
       dotenv.env['NEXT_PUBLIC_API_URL'] ?? dotenv.env['API_URL'] ?? '';
   final todayParam = _toUtcMidnightIsoFromLocalDay(localDate);
@@ -125,12 +157,12 @@ Future<NutritionDailyDashboard> getNutritionDashboardByDate({
       .timeout(const Duration(seconds: 120));
 
   if (dailyRes.statusCode < 200 || dailyRes.statusCode >= 300) {
-    throw Exception('Falha ao carregar diário (${dailyRes.statusCode})');
+    throw Exception('Falha ao carregar diario (${dailyRes.statusCode})');
   }
 
   final daily = _extractMap(jsonDecode(dailyRes.body));
   if (daily == null) {
-    return NutritionDailyDashboard(
+    final empty = NutritionDailyDashboard(
       summary: NutritionDailySummary(
         date: localDate,
         dailyLimit: 0,
@@ -143,6 +175,11 @@ Future<NutritionDailyDashboard> getNutritionDashboardByDate({
       meals: const [],
       dailyId: null,
     );
+    _dashboardCache[dashboardKey] = _CachedDashboard(
+      timestamp: DateTime.now(),
+      data: empty,
+    );
+    return empty;
   }
 
   final dailyId = _toInt(daily['id']);
@@ -251,7 +288,7 @@ Future<NutritionDailyDashboard> getNutritionDashboardByDate({
     }
   }
 
-  return NutritionDailyDashboard(
+  final dashboard = NutritionDailyDashboard(
     summary: NutritionDailySummary(
       date: _toDate(daily['data']) ?? localDate,
       dailyLimit: dailyLimit,
@@ -264,12 +301,29 @@ Future<NutritionDailyDashboard> getNutritionDashboardByDate({
     meals: meals,
     dailyId: dailyId,
   );
+
+  _dashboardCache[dashboardKey] = _CachedDashboard(
+    timestamp: DateTime.now(),
+    data: dashboard,
+  );
+
+  return dashboard;
 }
 
 Future<List<DailyCalendarSummary>> getDailyCalendarSummaries({
   required int userId,
   required String token,
+  bool forceRefresh = false,
 }) async {
+  final calendarKey = _calendarKey(userId);
+  if (!forceRefresh) {
+    final cached = _calendarCache[calendarKey];
+    if (cached != null &&
+        DateTime.now().difference(cached.timestamp) < _calendarCacheTtl) {
+      return cached.data;
+    }
+  }
+
   final apiUrl =
       dotenv.env['NEXT_PUBLIC_API_URL'] ?? dotenv.env['API_URL'] ?? '';
   final response = await http
@@ -281,13 +335,13 @@ Future<List<DailyCalendarSummary>> getDailyCalendarSummaries({
 
   if (response.statusCode < 200 || response.statusCode >= 300) {
     throw Exception(
-      'Falha ao carregar lista de diários (${response.statusCode}): ${response.body}',
+      'Falha ao carregar lista de diarios (${response.statusCode}): ${response.body}',
     );
   }
 
   final parsed = jsonDecode(response.body);
   final list = _extractList(parsed);
-  return list
+  final summaries = list
       .map((e) {
         final date = _toDate(e['data']);
         if (date == null) return null;
@@ -299,6 +353,13 @@ Future<List<DailyCalendarSummary>> getDailyCalendarSummaries({
       })
       .whereType<DailyCalendarSummary>()
       .toList();
+
+  _calendarCache[calendarKey] = _CachedCalendar(
+    timestamp: DateTime.now(),
+    data: summaries,
+  );
+
+  return summaries;
 }
 
 Future<void> deleteMealById({
@@ -320,9 +381,23 @@ Future<void> deleteMealById({
 
   if (response.statusCode < 200 || response.statusCode >= 300) {
     throw Exception(
-      'Falha ao deletar refeição (${response.statusCode}): ${response.body}',
+      'Falha ao deletar refeicao (${response.statusCode}): ${response.body}',
     );
   }
+
+  clearNutritionRequestCaches(userId: userId);
+}
+
+void clearNutritionRequestCaches({int? userId}) {
+  if (userId == null) {
+    _dashboardCache.clear();
+    _calendarCache.clear();
+    return;
+  }
+  _dashboardCache.removeWhere(
+    (key, _) => key.startsWith('dashboard_${userId}_'),
+  );
+  _calendarCache.remove(_calendarKey(userId));
 }
 
 Map<String, String> _authHeaders(String token) => {
@@ -380,4 +455,13 @@ DateTime? _toDate(dynamic value) {
   if (value is String) return DateTime.tryParse(value);
   if (value is DateTime) return value;
   return null;
+}
+
+String _calendarKey(int userId) => 'calendar_$userId';
+
+String _dashboardKey(int userId, DateTime localDate) {
+  final y = localDate.year.toString().padLeft(4, '0');
+  final m = localDate.month.toString().padLeft(2, '0');
+  final d = localDate.day.toString().padLeft(2, '0');
+  return 'dashboard_${userId}_$y$m$d';
 }

@@ -14,7 +14,7 @@ class MealPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: Row(
@@ -42,8 +42,6 @@ class MealPage extends StatelessWidget {
           bottom: const TabBar(
             tabs: [
               Tab(text: MealPageText.dailyNutritionTabTitle),
-              Tab(text: MealPageText.newMealTabTitle),
-              Tab(text: MealPageText.registerMealTabTitle),
               Tab(text: MealPageText.recipesMealTabTitle),
             ],
             labelColor: AppColors.appBackground,
@@ -52,15 +50,90 @@ class MealPage extends StatelessWidget {
           ),
           actions: [const LogoutButton()],
         ),
-        body: const TabBarView(
+        body: TabBarView(
           children: [
-            DailyNutritionTab(),
-            NewMealTab(),
-            RegisterMealTab(),
-            RecipesMealTab(),
+            DailyNutritionTab(
+              onOpenNewMeal: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => _StandaloneTabPage(
+                    title: 'Nova refeicao',
+                    child: const NewMealTab(),
+                  ),
+                ),
+              ),
+            ),
+            RecipesMealTab(
+              onOpenNewMeal: (initialFirstItem) => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => _StandaloneTabPage(
+                    title: 'Nova refeicao',
+                    child: NewMealTab(initialFirstItem: initialFirstItem),
+                  ),
+                ),
+              ),
+              onOpenRegisterRecipe: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const _StandaloneTabPage(
+                    title: 'Nova',
+                    child: RegisterMealTab(),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _StandaloneTabPage extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const _StandaloneTabPage({required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: SvgPicture.asset(
+                'assets/svg/svg_base.svg',
+                width: 24,
+                height: 24,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text('PPeso', style: AppTextStyles.titleWhite),
+          ],
+        ),
+        backgroundColor: AppColors.primary,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(36),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.appBackground,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: child,
     );
   }
 }

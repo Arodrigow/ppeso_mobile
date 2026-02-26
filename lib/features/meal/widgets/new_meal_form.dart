@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/features/meal/models/meal_item_model.dart';
+import 'package:ppeso_mobile/features/meal/models/user_recipe_model.dart';
 import 'package:ppeso_mobile/features/meal/providers/user_recipes_provider.dart';
 import 'package:ppeso_mobile/providers/user_provider.dart';
 import 'package:ppeso_mobile/shared/content.dart';
 import 'package:ppeso_mobile/shared/loading_message.dart';
 import 'package:ppeso_mobile/shared/requests/daily_requests.dart';
 import 'package:ppeso_mobile/shared/requests/new_meal_requests.dart';
+import 'package:ppeso_mobile/shared/requests/nutrition_daily_requests.dart';
 
 class MealForm extends ConsumerStatefulWidget {
-  const MealForm({super.key});
+  final String? initialFirstItem;
+
+  const MealForm({super.key, this.initialFirstItem});
 
   @override
   ConsumerState<MealForm> createState() => _MealFormState();
@@ -22,7 +26,12 @@ class _MealFormState extends ConsumerState<MealForm> {
   @override
   void initState() {
     super.initState();
-    _addItem();
+    final initial = widget.initialFirstItem?.trim();
+    if (initial != null && initial.isNotEmpty) {
+      _addItem(initialName: initial);
+    } else {
+      _addItem();
+    }
   }
 
   @override
@@ -67,54 +76,158 @@ class _MealFormState extends ConsumerState<MealForm> {
     if (userId == null || token == null || token.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('SessÃƒÂ£o invÃƒÂ¡lida. FaÃƒÂ§a login novamente.'),
+          content: Text('Sessao invalida. Faca login novamente.'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    final lines = <String>[];
+    final recipesByTitle = {
+      for (final recipe in ref.read(userRecipesProvider))
+        recipe.title.trim().toLowerCase(): recipe,
+    };
+
+    final preparedItems = <_PreparedItem>[];
     for (int i = 0; i < _items.length; i++) {
       final item = _items[i];
       final desc = item.name.text.trim();
       final value = item.quantity.text.trim();
       if (desc.isEmpty || value.isEmpty) continue;
-      lines.add('item ${i + 1}: $desc, $value (${item.unit.title})');
+
+      preparedItems.add(
+        _PreparedItem(
+          position: i + 1,
+          description: desc,
+          quantity: value,
+          unit: item.unit,
+          knownRecipe: recipesByTitle[desc.toLowerCase()],
+        ),
+      );
     }
 
-    if (lines.isEmpty) {
+    if (preparedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Adicione ao menos um item vÃƒÂ¡lido para analisar.'),
+          content: Text('Adicione ao menos um item valido para analisar.'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    final payloadText = lines.join('; ');
-    final analysisPrompt =
-        'Faca a analise nutricional em portugues-BR para estes itens: $payloadText';
+    final knownItems = preparedItems
+        .where((item) => item.knownRecipe != null)
+        .map((item) => item.toKnownNutritionResult())
+        .toList();
+    final unknownItems = preparedItems
+        .where((item) => item.knownRecipe == null)
+        .toList();
 
     try {
-      final analysis = await withLoading(
-        context,
-        () =>
-            analyzeMealText(userId: userId, token: token, text: analysisPrompt),
+      NutritionAnalysisResult unknownAnalysis = const NutritionAnalysisResult(
+        itens: [],
+        total: NutritionItemResult(
+          alimento: 'Total',
+          porcao: 'total',
+          caloriasKcal: 0,
+          carboidratosG: 0,
+          proteinasG: 0,
+          gordurasG: 0,
+          fibrasG: 0,
+          sodioMg: 0,
+          fonte: '',
+        ),
+      );
+
+      if (unknownItems.isNotEmpty) {
+        final payloadText = unknownItems
+            .map(
+              (item) =>
+                  'item ${item.position}: ${item.description}, ${item.quantity} (${item.unit.title})',
+            )
+            .join('; ');
+        final analysisPrompt =
+            'Faca a analise nutricional em portugues-BR para estes itens: $payloadText';
+
+        unknownAnalysis = await withLoading(
+          context,
+          () => analyzeMealText(
+            userId: userId,
+            token: token,
+            text: analysisPrompt,
+          ),
+        );
+      }
+
+      final allItems = <NutritionItemResult>[
+        ...knownItems,
+        ...unknownAnalysis.itens,
+      ];
+      final total = _sumNutritionItems(allItems);
+      final warning = _buildAnalysisWarning(
+        knownCount: knownItems.length,
+        analyzerWarning: unknownAnalysis.other,
       );
 
       if (!mounted) return;
-      _showAnalysisModal(analysis);
+      _showAnalysisModal(
+        NutritionAnalysisResult(itens: allItems, total: total, other: warning),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Falha na anÃƒÂ¡lise nutricional: $e'),
+          content: Text('Falha na analise nutricional: $e'),
           backgroundColor: Colors.red,
         ),
       );
     }
+  }
+
+  NutritionItemResult _sumNutritionItems(List<NutritionItemResult> items) {
+    double calories = 0;
+    double carbs = 0;
+    double proteins = 0;
+    double fat = 0;
+    double fibers = 0;
+    double sodium = 0;
+
+    for (final item in items) {
+      calories += item.caloriasKcal;
+      carbs += item.carboidratosG;
+      proteins += item.proteinasG;
+      fat += item.gordurasG;
+      fibers += item.fibrasG;
+      sodium += item.sodioMg;
+    }
+
+    return NutritionItemResult(
+      alimento: 'Total',
+      porcao: 'total',
+      caloriasKcal: calories,
+      carboidratosG: carbs,
+      proteinasG: proteins,
+      gordurasG: fat,
+      fibrasG: fibers,
+      sodioMg: sodium,
+      fonte: '',
+    );
+  }
+
+  String? _buildAnalysisWarning({
+    required int knownCount,
+    required String? analyzerWarning,
+  }) {
+    final messages = <String>[];
+    if (knownCount > 0) {
+      messages.add('$knownCount item(ns) usaram valores de receitas cadastradas.');
+    }
+    if (analyzerWarning != null && analyzerWarning.trim().isNotEmpty) {
+      messages.add(analyzerWarning.trim());
+    }
+    if (messages.isEmpty) return null;
+    return messages.join('\n');
   }
 
   Future<void> _confirmCreateMeal(NutritionAnalysisResult analysis) async {
@@ -154,19 +267,21 @@ class _MealFormState extends ConsumerState<MealForm> {
             itens: analysis.itens,
           );
         }
+
+        clearNutritionRequestCaches(userId: userId);
       });
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('RefeiÃƒÂ§ÃƒÂ£o e itens criados com sucesso.'),
+          content: Text('Refeicao e itens criados com sucesso.'),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Falha ao criar refeiÃƒÂ§ÃƒÂ£o/itens: $e'),
+          content: Text('Falha ao criar refeicao/itens: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -185,7 +300,7 @@ class _MealFormState extends ConsumerState<MealForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('AnÃƒÂ¡lise nutricional', style: AppTextStyles.subTitle),
+                  Text('Analise nutricional', style: AppTextStyles.subTitle),
                   const SizedBox(height: 12),
                   if (analysis.hasWarning)
                     Text(
@@ -201,7 +316,7 @@ class _MealFormState extends ConsumerState<MealForm> {
                     '${analysis.total.carboidratosG.toStringAsFixed(1)} g',
                   ),
                   _resultRow(
-                    'ProteÃƒÂ­nas',
+                    'Proteinas',
                     '${analysis.total.proteinasG.toStringAsFixed(1)} g',
                   ),
                   _resultRow(
@@ -216,7 +331,7 @@ class _MealFormState extends ConsumerState<MealForm> {
                   Text('Itens', style: AppTextStyles.bodyBold),
                   const SizedBox(height: 6),
                   if (analysis.itens.isEmpty)
-                    const Text('Nenhum item retornado pela anÃƒÂ¡lise.'),
+                    const Text('Nenhum item retornado pela analise.'),
                   ...analysis.itens.map(
                     (item) => Padding(
                       padding: const EdgeInsets.only(bottom: 6),
@@ -262,10 +377,15 @@ class _MealFormState extends ConsumerState<MealForm> {
         return options.where((option) => option.toLowerCase().contains(query));
       },
       onSelected: (selected) {
-        item.name.value = TextEditingValue(
-          text: selected,
-          selection: TextSelection.collapsed(offset: selected.length),
-        );
+        setState(() {
+          item.name.value = TextEditingValue(
+            text: selected,
+            selection: TextSelection.collapsed(offset: selected.length),
+          );
+          if (_isKnownRecipeTitle(selected)) {
+            item.unit = Measurements.grams;
+          }
+        });
       },
       fieldViewBuilder:
           (context, textEditingController, focusNode, onFieldSubmitted) {
@@ -289,10 +409,15 @@ class _MealFormState extends ConsumerState<MealForm> {
                 focusedBorder: TextInputStyles.focusDefault,
               ),
               onChanged: (value) {
-                item.name.value = TextEditingValue(
-                  text: value,
-                  selection: TextSelection.collapsed(offset: value.length),
-                );
+                setState(() {
+                  item.name.value = TextEditingValue(
+                    text: value,
+                    selection: TextSelection.collapsed(offset: value.length),
+                  );
+                  if (_isKnownRecipeTitle(value)) {
+                    item.unit = Measurements.grams;
+                  }
+                });
               },
             );
           },
@@ -301,18 +426,7 @@ class _MealFormState extends ConsumerState<MealForm> {
 
   @override
   Widget build(BuildContext context) {
-    final recipeNames = ref
-        .watch(userRecipesProvider)
-        .map((r) => r.title)
-        .toList();
-
-    ref.listen<String?>(selectedRecipeForNewMealProvider, (previous, next) {
-      if (next == null || next.trim().isEmpty) {
-        return;
-      }
-      _addItem(initialName: next.trim(), asFirst: true);
-      ref.read(selectedRecipeForNewMealProvider.notifier).state = null;
-    });
+    final recipeNames = ref.watch(userRecipesProvider).map((r) => r.title).toList();
 
     return Column(
       children: [
@@ -333,6 +447,10 @@ class _MealFormState extends ConsumerState<MealForm> {
           itemCount: _items.length,
           itemBuilder: (context, index) {
             final item = _items[index];
+            final isKnownRecipe = _isKnownRecipeTitle(item.name.text);
+            final availableUnits = isKnownRecipe
+                ? const [Measurements.grams]
+                : Measurements.values;
             return Card(
               margin: const EdgeInsets.symmetric(vertical: 8),
               color: AppColors.widgetBackground,
@@ -364,13 +482,16 @@ class _MealFormState extends ConsumerState<MealForm> {
                         Expanded(
                           child: DropdownButtonFormField<Measurements>(
                             initialValue: item.unit,
+                            key: ValueKey(
+                              '${index}_${item.unit}_${isKnownRecipe ? 'known' : 'unknown'}',
+                            ),
                             isExpanded: true,
                             decoration: InputDecoration(
                               labelText: NewMealTabText.newMealItemUnitTitle,
                               enabledBorder: TextInputStyles.enabledDefault,
                               focusedBorder: TextInputStyles.focusDefault,
                             ),
-                            items: Measurements.values
+                            items: availableUnits
                                 .map(
                                   (m) => DropdownMenuItem(
                                     value: m,
@@ -381,6 +502,13 @@ class _MealFormState extends ConsumerState<MealForm> {
                                   ),
                                 )
                                 .toList(),
+                            onTap: () {
+                              if (isKnownRecipe && item.unit != Measurements.grams) {
+                                setState(() {
+                                  item.unit = Measurements.grams;
+                                });
+                              }
+                            },
                             onChanged: (value) {
                               if (value != null) {
                                 setState(() {
@@ -452,4 +580,52 @@ class _MealFormState extends ConsumerState<MealForm> {
     }
     return 0;
   }
+
+  bool _isKnownRecipeTitle(String rawName) {
+    final name = rawName.trim().toLowerCase();
+    if (name.isEmpty) return false;
+    for (final recipe in ref.read(userRecipesProvider)) {
+      if (recipe.title.trim().toLowerCase() == name) return true;
+    }
+    return false;
+  }
+}
+
+class _PreparedItem {
+  final int position;
+  final String description;
+  final String quantity;
+  final Measurements unit;
+  final UserRecipeModel? knownRecipe;
+
+  const _PreparedItem({
+    required this.position,
+    required this.description,
+    required this.quantity,
+    required this.unit,
+    required this.knownRecipe,
+  });
+
+  NutritionItemResult toKnownNutritionResult() {
+    final recipe = knownRecipe!;
+    final qty = _toDoubleQty(quantity);
+    final grams = qty > 0 ? qty : 100.0;
+    final factor = grams / 100.0;
+
+    return NutritionItemResult(
+      alimento: description,
+      porcao: '${grams.toStringAsFixed(0)} g',
+      caloriasKcal: recipe.calories * factor,
+      carboidratosG: recipe.carbs * factor,
+      proteinasG: recipe.proteins * factor,
+      gordurasG: recipe.fat * factor,
+      fibrasG: recipe.fibers * factor,
+      sodioMg: recipe.sodium * factor,
+      fonte: 'receita_cadastrada',
+    );
+  }
+}
+
+double _toDoubleQty(String value) {
+  return double.tryParse(value.replaceAll(',', '.')) ?? 0;
 }
