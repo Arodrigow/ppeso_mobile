@@ -10,11 +10,21 @@ class RegisterPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.appBackground,
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 700),
-            child: const RegisterCard(),
-          ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 700),
+                    child: const RegisterCard(),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

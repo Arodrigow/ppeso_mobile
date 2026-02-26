@@ -85,14 +85,37 @@ class NutritionDailyDashboard {
   });
 }
 
+class DailyCalendarSummary {
+  final DateTime date;
+  final double dailyLimit;
+  final double calories;
+
+  const DailyCalendarSummary({
+    required this.date,
+    required this.dailyLimit,
+    required this.calories,
+  });
+}
+
 Future<NutritionDailyDashboard> getTodayNutritionDashboard({
   required int userId,
   required String token,
 }) async {
+  return getNutritionDashboardByDate(
+    userId: userId,
+    token: token,
+    localDate: DateTime.now(),
+  );
+}
+
+Future<NutritionDailyDashboard> getNutritionDashboardByDate({
+  required int userId,
+  required String token,
+  required DateTime localDate,
+}) async {
   final apiUrl =
       dotenv.env['NEXT_PUBLIC_API_URL'] ?? dotenv.env['API_URL'] ?? '';
-  final localToday = DateTime.now();
-  final todayParam = _toUtcMidnightIsoFromLocalDay(localToday);
+  final todayParam = _toUtcMidnightIsoFromLocalDay(localDate);
 
   final dailyRes = await http
       .get(
@@ -109,7 +132,7 @@ Future<NutritionDailyDashboard> getTodayNutritionDashboard({
   if (daily == null) {
     return NutritionDailyDashboard(
       summary: NutritionDailySummary(
-        date: localToday,
+        date: localDate,
         dailyLimit: 0,
         calories: 0,
         carbs: 0,
@@ -230,7 +253,7 @@ Future<NutritionDailyDashboard> getTodayNutritionDashboard({
 
   return NutritionDailyDashboard(
     summary: NutritionDailySummary(
-      date: _toDate(daily['data']) ?? localToday,
+      date: _toDate(daily['data']) ?? localDate,
       dailyLimit: dailyLimit,
       calories: calories,
       carbs: carbs,
@@ -241,6 +264,41 @@ Future<NutritionDailyDashboard> getTodayNutritionDashboard({
     meals: meals,
     dailyId: dailyId,
   );
+}
+
+Future<List<DailyCalendarSummary>> getDailyCalendarSummaries({
+  required int userId,
+  required String token,
+}) async {
+  final apiUrl =
+      dotenv.env['NEXT_PUBLIC_API_URL'] ?? dotenv.env['API_URL'] ?? '';
+  final response = await http
+      .get(
+        Uri.parse('$apiUrl/daily/$userId'),
+        headers: _authHeaders(token),
+      )
+      .timeout(const Duration(seconds: 120));
+
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw Exception(
+      'Falha ao carregar lista de diários (${response.statusCode}): ${response.body}',
+    );
+  }
+
+  final parsed = jsonDecode(response.body);
+  final list = _extractList(parsed);
+  return list
+      .map((e) {
+        final date = _toDate(e['data']);
+        if (date == null) return null;
+        return DailyCalendarSummary(
+          date: date.toLocal(),
+          dailyLimit: _toDouble(e['daily_limit']) ?? 0,
+          calories: _toDouble(e['calorias_total']) ?? 0,
+        );
+      })
+      .whereType<DailyCalendarSummary>()
+      .toList();
 }
 
 Future<void> deleteMealById({
