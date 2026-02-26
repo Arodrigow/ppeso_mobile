@@ -8,6 +8,7 @@ import 'package:ppeso_mobile/features/profile/widgets/custom_modal.dart';
 import 'package:ppeso_mobile/providers/user_provider.dart';
 import 'package:ppeso_mobile/shared/content.dart';
 import 'package:ppeso_mobile/shared/loading_message.dart';
+import 'package:ppeso_mobile/shared/requests/new_meal_requests.dart';
 import 'package:ppeso_mobile/shared/requests/recipe_requests.dart';
 import 'package:ppeso_mobile/shared/tab_structure.dart';
 
@@ -22,7 +23,7 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _recipeController = TextEditingController();
-  RecipeAnalysisModel? _lastAnalysis;
+  NutritionAnalysisResult? _lastAnalysis;
 
   @override
   void dispose() {
@@ -45,6 +46,9 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
     final title = _titleController.text.trim();
     final description = _descriptionController.text.trim();
     final recipe = _recipeController.text.trim();
+    final user = ref.read(userProvider);
+    final token = ref.read(authTokenProvider);
+    final userId = _parseUserId(user?['id']);
 
     if (title.isEmpty || description.isEmpty || recipe.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -56,21 +60,44 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
       return;
     }
 
-    final result = const RecipeAnalysisModel(
-      calories: 420,
-      carbo: 52,
-      proteins: 28,
-      fat: 14,
-      fibers: 8,
-    );
+    if (userId == null || token == null || token.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid user session.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-    setState(() {
-      _lastAnalysis = result;
-    });
-    _showResultModal(result);
+    final analysisPrompt =
+        'Faca a analise nutricional em portugues-BR para a seguinte receita. '
+        'Titulo: $title. Descricao: $description. Receita: $recipe';
+
+    try {
+      final result = await withLoading(
+        context,
+        () =>
+            analyzeMealText(userId: userId, token: token, text: analysisPrompt),
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _lastAnalysis = result;
+      });
+      _showResultModal(result);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to analyze recipe: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
-  Future<void> _askSaveRecipe(RecipeAnalysisModel result) async {
+  Future<void> _askSaveRecipe(NutritionAnalysisResult result) async {
     await CustomModal.dialog(
       context,
       title: 'Save recipe',
@@ -80,13 +107,20 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
       onConfirm: () async {
         try {
           final token = ref.read(authTokenProvider);
+          final nutrition = RecipeAnalysisModel(
+            calories: result.total.caloriasKcal,
+            carbo: result.total.carboidratosG,
+            proteins: result.total.proteinasG,
+            fat: result.total.gordurasG,
+            fibers: result.total.fibrasG,
+          );
           await withLoading(
             context,
             () => saveRecipe(
               title: _titleController.text.trim(),
               description: _descriptionController.text.trim(),
               recipe: _recipeController.text.trim(),
-              nutrition: result,
+              nutrition: nutrition,
               token: token,
             ),
           );
@@ -118,7 +152,7 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
     );
   }
 
-  void _showResultModal(RecipeAnalysisModel result) {
+  void _showResultModal(NutritionAnalysisResult result) {
     CustomModal.bottomSheet(
       context,
       child: Column(
@@ -126,14 +160,30 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
         children: [
           Text('Nutritional values', style: AppTextStyles.subTitle),
           const SizedBox(height: 16),
+          if (result.hasWarning) ...[
+            Text(result.other!, style: const TextStyle(color: Colors.orange)),
+            const SizedBox(height: 10),
+          ],
           _nutritionRow(
             'Calories',
-            '${result.calories.toStringAsFixed(2)} kcal',
+            '${result.total.caloriasKcal.toStringAsFixed(2)} kcal',
           ),
-          _nutritionRow('Carbo', '${result.carbo.toStringAsFixed(2)} g'),
-          _nutritionRow('Proteins', '${result.proteins.toStringAsFixed(2)} g'),
-          _nutritionRow('Fat', '${result.fat.toStringAsFixed(2)} g'),
-          _nutritionRow('Fibers', '${result.fibers.toStringAsFixed(2)} g'),
+          _nutritionRow(
+            'Carbo',
+            '${result.total.carboidratosG.toStringAsFixed(2)} g',
+          ),
+          _nutritionRow(
+            'Proteins',
+            '${result.total.proteinasG.toStringAsFixed(2)} g',
+          ),
+          _nutritionRow(
+            'Fat',
+            '${result.total.gordurasG.toStringAsFixed(2)} g',
+          ),
+          _nutritionRow(
+            'Fibers',
+            '${result.total.fibrasG.toStringAsFixed(2)} g',
+          ),
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -169,6 +219,13 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
         ],
       ),
     );
+  }
+
+  int? _parseUserId(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 
   @override
