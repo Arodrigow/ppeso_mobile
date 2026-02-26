@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 const Duration _dashboardCacheTtl = Duration(seconds: 45);
 const Duration _calendarCacheTtl = Duration(minutes: 5);
@@ -143,6 +144,12 @@ Future<NutritionDailyDashboard> getNutritionDashboardByDate({
         DateTime.now().difference(cached.timestamp) < _dashboardCacheTtl) {
       return cached.data;
     }
+
+    final diskCached = await _readDashboardFromDisk(userId, localDate);
+    if (diskCached != null) {
+      _dashboardCache[dashboardKey] = diskCached;
+      return diskCached.data;
+    }
   }
 
   final apiUrl =
@@ -179,6 +186,7 @@ Future<NutritionDailyDashboard> getNutritionDashboardByDate({
       timestamp: DateTime.now(),
       data: empty,
     );
+    await _saveDashboardToDisk(userId, localDate, empty);
     return empty;
   }
 
@@ -306,6 +314,7 @@ Future<NutritionDailyDashboard> getNutritionDashboardByDate({
     timestamp: DateTime.now(),
     data: dashboard,
   );
+  await _saveDashboardToDisk(userId, localDate, dashboard);
 
   return dashboard;
 }
@@ -321,6 +330,12 @@ Future<List<DailyCalendarSummary>> getDailyCalendarSummaries({
     if (cached != null &&
         DateTime.now().difference(cached.timestamp) < _calendarCacheTtl) {
       return cached.data;
+    }
+
+    final diskCached = await _readCalendarFromDisk(userId);
+    if (diskCached != null) {
+      _calendarCache[calendarKey] = diskCached;
+      return diskCached.data;
     }
   }
 
@@ -358,6 +373,7 @@ Future<List<DailyCalendarSummary>> getDailyCalendarSummaries({
     timestamp: DateTime.now(),
     data: summaries,
   );
+  await _saveCalendarToDisk(userId, summaries);
 
   return summaries;
 }
@@ -392,12 +408,14 @@ void clearNutritionRequestCaches({int? userId}) {
   if (userId == null) {
     _dashboardCache.clear();
     _calendarCache.clear();
+    _clearAllNutritionDiskCaches();
     return;
   }
   _dashboardCache.removeWhere(
     (key, _) => key.startsWith('dashboard_${userId}_'),
   );
   _calendarCache.remove(_calendarKey(userId));
+  _clearUserNutritionDiskCaches(userId);
 }
 
 Map<String, String> _authHeaders(String token) => {
@@ -455,6 +473,233 @@ DateTime? _toDate(dynamic value) {
   if (value is String) return DateTime.tryParse(value);
   if (value is DateTime) return value;
   return null;
+}
+
+String _dashboardDiskKey(int userId, DateTime localDate) {
+  final y = localDate.year.toString().padLeft(4, '0');
+  final m = localDate.month.toString().padLeft(2, '0');
+  final d = localDate.day.toString().padLeft(2, '0');
+  return 'cache_dashboard_${userId}_$y$m$d';
+}
+
+String _calendarDiskKey(int userId) => 'cache_calendar_$userId';
+
+Future<_CachedDashboard?> _readDashboardFromDisk(
+  int userId,
+  DateTime localDate,
+) async {
+  final prefs = await SharedPreferences.getInstance();
+  final raw = prefs.getString(_dashboardDiskKey(userId, localDate));
+  if (raw == null || raw.isEmpty) return null;
+
+  final decoded = jsonDecode(raw);
+  if (decoded is! Map<String, dynamic>) return null;
+  final tsRaw = decoded['timestamp'];
+  final dataRaw = decoded['data'];
+  if (tsRaw is! String || dataRaw is! Map<String, dynamic>) return null;
+
+  final timestamp = DateTime.tryParse(tsRaw);
+  if (timestamp == null) return null;
+  if (DateTime.now().difference(timestamp) >= _dashboardCacheTtl) return null;
+
+  final dashboard = _dashboardFromJson(dataRaw);
+  if (dashboard == null) return null;
+  return _CachedDashboard(timestamp: timestamp, data: dashboard);
+}
+
+Future<void> _saveDashboardToDisk(
+  int userId,
+  DateTime localDate,
+  NutritionDailyDashboard dashboard,
+) async {
+  final prefs = await SharedPreferences.getInstance();
+  final payload = {
+    'timestamp': DateTime.now().toIso8601String(),
+    'data': _dashboardToJson(dashboard),
+  };
+  await prefs.setString(
+    _dashboardDiskKey(userId, localDate),
+    jsonEncode(payload),
+  );
+}
+
+Future<_CachedCalendar?> _readCalendarFromDisk(int userId) async {
+  final prefs = await SharedPreferences.getInstance();
+  final raw = prefs.getString(_calendarDiskKey(userId));
+  if (raw == null || raw.isEmpty) return null;
+
+  final decoded = jsonDecode(raw);
+  if (decoded is! Map<String, dynamic>) return null;
+  final tsRaw = decoded['timestamp'];
+  final dataRaw = decoded['data'];
+  if (tsRaw is! String || dataRaw is! List) return null;
+
+  final timestamp = DateTime.tryParse(tsRaw);
+  if (timestamp == null) return null;
+  if (DateTime.now().difference(timestamp) >= _calendarCacheTtl) return null;
+
+  final data = dataRaw.whereType<Map<String, dynamic>>().map((e) {
+    final date = _toDate(e['date']);
+    if (date == null) return null;
+    return DailyCalendarSummary(
+      date: date,
+      dailyLimit: _toDouble(e['dailyLimit']) ?? 0,
+      calories: _toDouble(e['calories']) ?? 0,
+    );
+  }).whereType<DailyCalendarSummary>().toList();
+
+  return _CachedCalendar(timestamp: timestamp, data: data);
+}
+
+Future<void> _saveCalendarToDisk(
+  int userId,
+  List<DailyCalendarSummary> summaries,
+) async {
+  final prefs = await SharedPreferences.getInstance();
+  final payload = {
+    'timestamp': DateTime.now().toIso8601String(),
+    'data': summaries
+        .map(
+          (s) => {
+            'date': s.date.toIso8601String(),
+            'dailyLimit': s.dailyLimit,
+            'calories': s.calories,
+          },
+        )
+        .toList(),
+  };
+  await prefs.setString(_calendarDiskKey(userId), jsonEncode(payload));
+}
+
+Map<String, dynamic> _dashboardToJson(NutritionDailyDashboard dashboard) {
+  return {
+    'summary': {
+      'date': dashboard.summary.date.toIso8601String(),
+      'dailyLimit': dashboard.summary.dailyLimit,
+      'calories': dashboard.summary.calories,
+      'carbs': dashboard.summary.carbs,
+      'proteins': dashboard.summary.proteins,
+      'fat': dashboard.summary.fat,
+      'fibers': dashboard.summary.fibers,
+    },
+    'dailyId': dashboard.dailyId,
+    'meals': dashboard.meals
+        .map(
+          (meal) => {
+            'id': meal.id,
+            'porcao': meal.porcao,
+            'caloriasKcal': meal.caloriasKcal,
+            'carboidratosG': meal.carboidratosG,
+            'proteinasG': meal.proteinasG,
+            'gordurasG': meal.gordurasG,
+            'fibrasG': meal.fibrasG,
+            'sodioMg': meal.sodioMg,
+            'itens': meal.itens
+                .map(
+                  (item) => {
+                    'id': item.id,
+                    'alimento': item.alimento,
+                    'porcao': item.porcao,
+                    'caloriasKcal': item.caloriasKcal,
+                    'carboidratosG': item.carboidratosG,
+                    'proteinasG': item.proteinasG,
+                    'gordurasG': item.gordurasG,
+                    'fibrasG': item.fibrasG,
+                    'sodioMg': item.sodioMg,
+                    'fonte': item.fonte,
+                  },
+                )
+                .toList(),
+          },
+        )
+        .toList(),
+  };
+}
+
+NutritionDailyDashboard? _dashboardFromJson(Map<String, dynamic> json) {
+  final summaryRaw = json['summary'];
+  if (summaryRaw is! Map<String, dynamic>) return null;
+  final date = _toDate(summaryRaw['date']);
+  if (date == null) return null;
+
+  final mealsRaw = json['meals'];
+  final meals = <MealDetails>[];
+  if (mealsRaw is List) {
+    for (final mealRaw in mealsRaw.whereType<Map<String, dynamic>>()) {
+      final mealId = _toInt(mealRaw['id']) ?? 0;
+      final itens = <MealItemDetails>[];
+      final itensRaw = mealRaw['itens'];
+      if (itensRaw is List) {
+        for (final itemRaw in itensRaw.whereType<Map<String, dynamic>>()) {
+          itens.add(
+            MealItemDetails(
+              id: _toInt(itemRaw['id']) ?? 0,
+              alimento: (itemRaw['alimento'] ?? '').toString(),
+              porcao: (itemRaw['porcao'] ?? '').toString(),
+              caloriasKcal: _toDouble(itemRaw['caloriasKcal']) ?? 0,
+              carboidratosG: _toDouble(itemRaw['carboidratosG']) ?? 0,
+              proteinasG: _toDouble(itemRaw['proteinasG']) ?? 0,
+              gordurasG: _toDouble(itemRaw['gordurasG']) ?? 0,
+              fibrasG: _toDouble(itemRaw['fibrasG']) ?? 0,
+              sodioMg: _toDouble(itemRaw['sodioMg']) ?? 0,
+              fonte: (itemRaw['fonte'] ?? '').toString(),
+            ),
+          );
+        }
+      }
+
+      meals.add(
+        MealDetails(
+          id: mealId,
+          porcao: (mealRaw['porcao'] ?? '').toString(),
+          caloriasKcal: _toDouble(mealRaw['caloriasKcal']) ?? 0,
+          carboidratosG: _toDouble(mealRaw['carboidratosG']) ?? 0,
+          proteinasG: _toDouble(mealRaw['proteinasG']) ?? 0,
+          gordurasG: _toDouble(mealRaw['gordurasG']) ?? 0,
+          fibrasG: _toDouble(mealRaw['fibrasG']) ?? 0,
+          sodioMg: _toDouble(mealRaw['sodioMg']) ?? 0,
+          itens: itens,
+        ),
+      );
+    }
+  }
+
+  return NutritionDailyDashboard(
+    summary: NutritionDailySummary(
+      date: date,
+      dailyLimit: _toDouble(summaryRaw['dailyLimit']) ?? 0,
+      calories: _toDouble(summaryRaw['calories']) ?? 0,
+      carbs: _toDouble(summaryRaw['carbs']) ?? 0,
+      proteins: _toDouble(summaryRaw['proteins']) ?? 0,
+      fat: _toDouble(summaryRaw['fat']) ?? 0,
+      fibers: _toDouble(summaryRaw['fibers']) ?? 0,
+    ),
+    meals: meals,
+    dailyId: _toInt(json['dailyId']),
+  );
+}
+
+void _clearUserNutritionDiskCaches(int userId) {
+  SharedPreferences.getInstance().then((prefs) {
+    final keys = prefs.getKeys();
+    for (final key in keys) {
+      if (key.startsWith('cache_dashboard_${userId}_') ||
+          key == _calendarDiskKey(userId)) {
+        prefs.remove(key);
+      }
+    }
+  });
+}
+
+void _clearAllNutritionDiskCaches() {
+  SharedPreferences.getInstance().then((prefs) {
+    final keys = prefs.getKeys();
+    for (final key in keys) {
+      if (key.startsWith('cache_dashboard_') || key.startsWith('cache_calendar_')) {
+        prefs.remove(key);
+      }
+    }
+  });
 }
 
 String _calendarKey(int userId) => 'calendar_$userId';

@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:ppeso_mobile/features/meal/models/recipe_analysis_model.dart';
 import 'package:ppeso_mobile/features/meal/models/user_recipe_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const Duration _recipesCacheTtl = Duration(minutes: 3);
 final Map<String, _CachedRecipes> _userRecipesCache = {};
@@ -139,6 +140,12 @@ Future<List<UserRecipeModel>> getUserRecipes({
         DateTime.now().difference(cached.timestamp) < _recipesCacheTtl) {
       return cached.data;
     }
+
+    final diskCached = await _readRecipesFromDisk(userId);
+    if (diskCached != null) {
+      _userRecipesCache[cacheKey] = diskCached;
+      return diskCached.data;
+    }
   }
 
   final baseUrl =
@@ -167,6 +174,7 @@ Future<List<UserRecipeModel>> getUserRecipes({
     timestamp: DateTime.now(),
     data: mapped,
   );
+  await _saveRecipesToDisk(userId, mapped);
   return mapped;
 }
 
@@ -201,6 +209,7 @@ void clearUserRecipesCache({int? userId}) {
     return;
   }
   _userRecipesCache.clear();
+  _clearAllRecipesDiskCache();
 }
 
 List<Map<String, dynamic>> _extractList(dynamic value) {
@@ -237,4 +246,70 @@ String _recipesKey(int userId) => 'recipes_$userId';
 
 void _invalidateUserRecipesCache(int userId) {
   _userRecipesCache.remove(_recipesKey(userId));
+  _clearRecipesDiskCache(userId);
+}
+
+String _recipesDiskKey(int userId) => 'cache_recipes_$userId';
+
+Future<_CachedRecipes?> _readRecipesFromDisk(int userId) async {
+  final prefs = await SharedPreferences.getInstance();
+  final raw = prefs.getString(_recipesDiskKey(userId));
+  if (raw == null || raw.isEmpty) return null;
+
+  final decoded = jsonDecode(raw);
+  if (decoded is! Map<String, dynamic>) return null;
+  final tsRaw = decoded['timestamp'];
+  final listRaw = decoded['data'];
+  if (tsRaw is! String || listRaw is! List) return null;
+
+  final timestamp = DateTime.tryParse(tsRaw);
+  if (timestamp == null) return null;
+  if (DateTime.now().difference(timestamp) >= _recipesCacheTtl) return null;
+
+  final data = listRaw
+      .whereType<Map<String, dynamic>>()
+      .map(UserRecipeModel.fromJson)
+      .toList();
+  return _CachedRecipes(timestamp: timestamp, data: data);
+}
+
+Future<void> _saveRecipesToDisk(int userId, List<UserRecipeModel> recipes) async {
+  final prefs = await SharedPreferences.getInstance();
+  final payload = {
+    'timestamp': DateTime.now().toIso8601String(),
+    'data': recipes
+        .map(
+          (r) => {
+            'id': r.id,
+            'title': r.title,
+            'description': r.description,
+            'recipe': r.recipe,
+            'calorias_kcal': r.calories,
+            'carboidratos_g': r.carbs,
+            'proteinas_g': r.proteins,
+            'gorduras_g': r.fat,
+            'fibras_g': r.fibers,
+            'sodio_mg': r.sodium,
+          },
+        )
+        .toList(),
+  };
+  await prefs.setString(_recipesDiskKey(userId), jsonEncode(payload));
+}
+
+void _clearRecipesDiskCache(int userId) {
+  SharedPreferences.getInstance().then(
+    (prefs) => prefs.remove(_recipesDiskKey(userId)),
+  );
+}
+
+void _clearAllRecipesDiskCache() {
+  SharedPreferences.getInstance().then((prefs) {
+    final keys = prefs.getKeys();
+    for (final key in keys) {
+      if (key.startsWith('cache_recipes_')) {
+        prefs.remove(key);
+      }
+    }
+  });
 }

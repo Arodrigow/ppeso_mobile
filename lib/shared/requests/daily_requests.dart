@@ -26,6 +26,12 @@ Future<Map<String, dynamic>?> getTodayDaily({
         DateTime.now().difference(cached.timestamp) < _todayDailyCacheTtl) {
       return cached.data;
     }
+
+    final diskCached = await _readTodayDailyFromDisk(userId);
+    if (diskCached != null) {
+      _todayDailyCache[cacheKey] = diskCached;
+      return diskCached.data;
+    }
   }
 
   final apiUrl =
@@ -51,6 +57,7 @@ Future<Map<String, dynamic>?> getTodayDaily({
       timestamp: DateTime.now(),
       data: parsed,
     );
+    await _saveTodayDailyToDisk(userId, parsed);
     return parsed;
   }
   if (parsed is List &&
@@ -61,12 +68,14 @@ Future<Map<String, dynamic>?> getTodayDaily({
       timestamp: DateTime.now(),
       data: mapped,
     );
+    await _saveTodayDailyToDisk(userId, mapped);
     return mapped;
   }
   _todayDailyCache[cacheKey] = _CachedDaily(
     timestamp: DateTime.now(),
     data: null,
   );
+  await _saveTodayDailyToDisk(userId, null);
   return null;
 }
 
@@ -110,6 +119,7 @@ Future<void> ensureDailyForToday({
 
   await prefs.setString(persistedKey, localDayKey);
   _todayDailyCache.remove(_todayDailyKey(userId, DateTime.now()));
+  await prefs.remove(_todayDailyDiskKey(userId, DateTime.now()));
 }
 
 Map<String, String> _authHeaders(String token) => {
@@ -139,4 +149,45 @@ String _todayDailyKey(int userId, DateTime localDate) {
   final m = localDate.month.toString().padLeft(2, '0');
   final d = localDate.day.toString().padLeft(2, '0');
   return 'today_daily_${userId}_$y$m$d';
+}
+
+String _todayDailyDiskKey(int userId, DateTime localDate) {
+  final y = localDate.year.toString().padLeft(4, '0');
+  final m = localDate.month.toString().padLeft(2, '0');
+  final d = localDate.day.toString().padLeft(2, '0');
+  return 'cache_today_daily_${userId}_$y$m$d';
+}
+
+Future<_CachedDaily?> _readTodayDailyFromDisk(int userId) async {
+  final prefs = await SharedPreferences.getInstance();
+  final key = _todayDailyDiskKey(userId, DateTime.now());
+  final raw = prefs.getString(key);
+  if (raw == null || raw.isEmpty) return null;
+
+  final decoded = jsonDecode(raw);
+  if (decoded is! Map<String, dynamic>) return null;
+  final tsRaw = decoded['timestamp'];
+  if (tsRaw is! String) return null;
+  final timestamp = DateTime.tryParse(tsRaw);
+  if (timestamp == null) return null;
+  if (DateTime.now().difference(timestamp) >= _todayDailyCacheTtl) return null;
+
+  final data = decoded['data'];
+  if (data == null) {
+    return _CachedDaily(timestamp: timestamp, data: null);
+  }
+  if (data is Map<String, dynamic>) {
+    return _CachedDaily(timestamp: timestamp, data: data);
+  }
+  return null;
+}
+
+Future<void> _saveTodayDailyToDisk(int userId, Map<String, dynamic>? data) async {
+  final prefs = await SharedPreferences.getInstance();
+  final key = _todayDailyDiskKey(userId, DateTime.now());
+  final payload = {
+    'timestamp': DateTime.now().toIso8601String(),
+    'data': data,
+  };
+  await prefs.setString(key, jsonEncode(payload));
 }
