@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/providers/user_provider.dart';
 import 'package:ppeso_mobile/shared/content.dart';
+import 'package:ppeso_mobile/shared/loading_message.dart';
 import 'package:ppeso_mobile/shared/requests/nutrition_daily_requests.dart';
 import 'package:ppeso_mobile/shared/tab_structure.dart';
 
@@ -14,7 +15,7 @@ class DailyNutritionTab extends ConsumerStatefulWidget {
 }
 
 class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
-  NutritionDailySummary? _summary;
+  NutritionDailyDashboard? _dashboard;
   bool _isLoading = false;
   String? _error;
 
@@ -41,10 +42,13 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
     });
 
     try {
-      final data = await getTodayNutritionSummary(userId: userId, token: token);
+      final data = await getTodayNutritionDashboard(
+        userId: userId,
+        token: token,
+      );
       if (!mounted) return;
       setState(() {
-        _summary = data;
+        _dashboard = data;
         _isLoading = false;
       });
     } catch (e) {
@@ -58,7 +62,8 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
 
   @override
   Widget build(BuildContext context) {
-    final summary = _summary;
+    final summary = _dashboard?.summary;
+    final meals = _dashboard?.meals ?? const <MealDetails>[];
     final dayLabel = summary == null
         ? _formatDate(DateTime.now())
         : _formatDate(summary.date);
@@ -139,11 +144,157 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
               _row('Fibras', '${summary.fibers.toStringAsFixed(1)} g'),
             ],
           ),
+          const SizedBox(height: 12),
+          _summaryCard(
+            title: 'Refeições de hoje',
+            rows: [
+              if (meals.isEmpty)
+                const Text('Nenhuma refeição cadastrada hoje.'),
+              ...meals.map(
+                (meal) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    'Refeição #${meal.id}',
+                    style: AppTextStyles.bodyBold,
+                  ),
+                  subtitle: Text(
+                    '${meal.caloriasKcal.toStringAsFixed(1)} kcal | '
+                    'C ${meal.carboidratosG.toStringAsFixed(1)}g | '
+                    'P ${meal.proteinasG.toStringAsFixed(1)}g | '
+                    'G ${meal.gordurasG.toStringAsFixed(1)}g',
+                    style: AppTextStyles.description,
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _openMealDetails(meal),
+                ),
+              ),
+            ],
+          ),
         ],
         if (summary == null && !_isLoading && _error == null)
           const Text('Sem dados diarios disponiveis.'),
       ],
     );
+  }
+
+  void _openMealDetails(MealDetails meal) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Refeição #${meal.id}', style: AppTextStyles.subTitle),
+                const SizedBox(height: 10),
+                _row('Porção', meal.porcao.isEmpty ? '-' : meal.porcao),
+                _row(
+                  'Calorias',
+                  '${meal.caloriasKcal.toStringAsFixed(1)} kcal',
+                ),
+                _row(
+                  'Carboidratos',
+                  '${meal.carboidratosG.toStringAsFixed(1)} g',
+                ),
+                _row('Proteínas', '${meal.proteinasG.toStringAsFixed(1)} g'),
+                _row('Gorduras', '${meal.gordurasG.toStringAsFixed(1)} g'),
+                _row('Fibras', '${meal.fibrasG.toStringAsFixed(1)} g'),
+                _row('Sódio', '${meal.sodioMg.toStringAsFixed(1)} mg'),
+                const SizedBox(height: 12),
+                Text('Itens', style: AppTextStyles.bodyBold),
+                const SizedBox(height: 6),
+                if (meal.itens.isEmpty) const Text('Sem itens detalhados.'),
+                ...meal.itens.map(
+                  (item) => Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ExpansionTile(
+                      title: Text(item.alimento, style: AppTextStyles.bodyBold),
+                      subtitle: Text(
+                        '${item.caloriasKcal.toStringAsFixed(1)} kcal',
+                        style: AppTextStyles.description,
+                      ),
+                      childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                      children: [
+                        _row('Porção', item.porcao),
+                        _row(
+                          'Calorias',
+                          '${item.caloriasKcal.toStringAsFixed(1)} kcal',
+                        ),
+                        _row(
+                          'Carboidratos',
+                          '${item.carboidratosG.toStringAsFixed(1)} g',
+                        ),
+                        _row(
+                          'Proteínas',
+                          '${item.proteinasG.toStringAsFixed(1)} g',
+                        ),
+                        _row(
+                          'Gorduras',
+                          '${item.gordurasG.toStringAsFixed(1)} g',
+                        ),
+                        _row('Fibras', '${item.fibrasG.toStringAsFixed(1)} g'),
+                        _row('Sódio', '${item.sodioMg.toStringAsFixed(1)} mg'),
+                        if (item.fonte.isNotEmpty) _row('Fonte', item.fonte),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => _deleteMeal(meal.id, ctx),
+                      style: ButtonStyles.defaultAcceptButton.copyWith(
+                        backgroundColor: WidgetStateProperty.all(Colors.red),
+                      ),
+                      child: const Text('Deletar refeição'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('Fechar'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteMeal(int mealId, BuildContext sheetContext) async {
+    final user = ref.read(userProvider);
+    final token = ref.read(authTokenProvider);
+    final userId = _parseUserId(user?['id']);
+    if (userId == null || token == null || token.isEmpty) return;
+
+    try {
+      await withLoading(
+        context,
+        () => deleteMealById(userId: userId, mealId: mealId, token: token),
+      );
+      if (!mounted) return;
+      if (!sheetContext.mounted) return;
+      Navigator.of(sheetContext).pop();
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Refeição deletada com sucesso.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao deletar refeição: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _summaryCard({required String title, required List<Widget> rows}) {

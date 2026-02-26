@@ -4,6 +4,37 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+Future<Map<String, dynamic>?> getTodayDaily({
+  required int userId,
+  required String token,
+}) async {
+  final apiUrl =
+      dotenv.env['NEXT_PUBLIC_API_URL'] ?? dotenv.env['API_URL'] ?? '';
+  final dateIsoUtc = _utcMidnightIsoFromLocalDay(DateTime.now());
+
+  final response = await http
+      .get(
+        Uri.parse('$apiUrl/daily?date=$dateIsoUtc&userId=$userId'),
+        headers: _authHeaders(token),
+      )
+      .timeout(const Duration(seconds: 120));
+
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw Exception(
+      'Failed to load daily (${response.statusCode}): ${response.body}',
+    );
+  }
+
+  final parsed = jsonDecode(response.body);
+  if (parsed is Map<String, dynamic>) return parsed;
+  if (parsed is List &&
+      parsed.isNotEmpty &&
+      parsed.first is Map<String, dynamic>) {
+    return parsed.first as Map<String, dynamic>;
+  }
+  return null;
+}
+
 Future<void> ensureDailyForToday({
   required int userId,
   required String token,
@@ -16,33 +47,20 @@ Future<void> ensureDailyForToday({
     return;
   }
 
+  final existing = await getTodayDaily(userId: userId, token: token);
+  if (existing != null) {
+    await prefs.setString(persistedKey, localDayKey);
+    return;
+  }
+
   final apiUrl =
       dotenv.env['NEXT_PUBLIC_API_URL'] ?? dotenv.env['API_URL'] ?? '';
   final dateIsoUtc = _utcMidnightIsoFromLocalDay(DateTime.now());
-  final headers = _authHeaders(token);
-
-  final dailyRes = await http
-      .get(
-        Uri.parse('$apiUrl/daily?date=$dateIsoUtc&userId=$userId'),
-        headers: headers,
-      )
-      .timeout(const Duration(seconds: 120));
-
-  if (dailyRes.statusCode >= 200 && dailyRes.statusCode < 300) {
-    final parsed = jsonDecode(dailyRes.body);
-    final exists =
-        (parsed is Map<String, dynamic>) ||
-        (parsed is List && parsed.isNotEmpty);
-    if (exists) {
-      await prefs.setString(persistedKey, localDayKey);
-      return;
-    }
-  }
 
   final createRes = await http
       .post(
         Uri.parse('$apiUrl/daily'),
-        headers: headers,
+        headers: _authHeaders(token),
         body: jsonEncode({
           'data': {'date': dateIsoUtc, 'userId': userId},
         }),

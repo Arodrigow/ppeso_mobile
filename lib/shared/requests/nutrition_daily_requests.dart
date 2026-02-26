@@ -23,7 +23,69 @@ class NutritionDailySummary {
   });
 }
 
-Future<NutritionDailySummary> getTodayNutritionSummary({
+class MealItemDetails {
+  final int id;
+  final String alimento;
+  final String porcao;
+  final double caloriasKcal;
+  final double carboidratosG;
+  final double proteinasG;
+  final double gordurasG;
+  final double fibrasG;
+  final double sodioMg;
+  final String fonte;
+
+  const MealItemDetails({
+    required this.id,
+    required this.alimento,
+    required this.porcao,
+    required this.caloriasKcal,
+    required this.carboidratosG,
+    required this.proteinasG,
+    required this.gordurasG,
+    required this.fibrasG,
+    required this.sodioMg,
+    required this.fonte,
+  });
+}
+
+class MealDetails {
+  final int id;
+  final String porcao;
+  final double caloriasKcal;
+  final double carboidratosG;
+  final double proteinasG;
+  final double gordurasG;
+  final double fibrasG;
+  final double sodioMg;
+  final List<MealItemDetails> itens;
+
+  const MealDetails({
+    required this.id,
+    required this.porcao,
+    required this.caloriasKcal,
+    required this.carboidratosG,
+    required this.proteinasG,
+    required this.gordurasG,
+    required this.fibrasG,
+    required this.sodioMg,
+    required this.itens,
+  });
+}
+
+class NutritionDailyDashboard {
+  final NutritionDailySummary summary;
+  final List<MealDetails> meals;
+  final int? dailyId;
+
+  const NutritionDailyDashboard({
+    required this.summary,
+    required this.meals,
+    this.dailyId,
+  });
+}
+
+Future<NutritionDailyDashboard> getTodayNutritionDashboard({
   required int userId,
   required String token,
 }) async {
@@ -40,30 +102,34 @@ Future<NutritionDailySummary> getTodayNutritionSummary({
       .timeout(const Duration(seconds: 120));
 
   if (dailyRes.statusCode < 200 || dailyRes.statusCode >= 300) {
-    throw Exception('Failed to load daily (${dailyRes.statusCode})');
+    throw Exception('Falha ao carregar diário (${dailyRes.statusCode})');
   }
 
   final daily = _extractMap(jsonDecode(dailyRes.body));
   if (daily == null) {
-    return NutritionDailySummary(
-      date: localToday,
-      dailyLimit: 0,
-      calories: 0,
-      carbs: 0,
-      proteins: 0,
-      fat: 0,
-      fibers: 0,
+    return NutritionDailyDashboard(
+      summary: NutritionDailySummary(
+        date: localToday,
+        dailyLimit: 0,
+        calories: 0,
+        carbs: 0,
+        proteins: 0,
+        fat: 0,
+        fibers: 0,
+      ),
+      meals: const [],
+      dailyId: null,
     );
   }
 
   final dailyId = _toInt(daily['id']);
   final dailyLimit = _toDouble(daily['daily_limit']) ?? 0;
-  // Source of truth for consumed calories is the daily aggregate.
   final calories = _toDouble(daily['calorias_total']) ?? 0;
   double carbs = 0;
   double proteins = 0;
   double fat = 0;
   double fibers = 0;
+  final meals = <MealDetails>[];
 
   if (dailyId != null) {
     final mealsRes = await http
@@ -74,18 +140,19 @@ Future<NutritionDailySummary> getTodayNutritionSummary({
         .timeout(const Duration(seconds: 120));
 
     if (mealsRes.statusCode >= 200 && mealsRes.statusCode < 300) {
-      final meals = _extractList(jsonDecode(mealsRes.body));
-      for (final meal in meals) {
+      final mealsRaw = _extractList(jsonDecode(mealsRes.body));
+      for (final meal in mealsRaw) {
         final mealId = _toInt(meal['id']);
+        if (mealId == null) continue;
 
-        carbs += _toDouble(meal['carboidratos_g']) ?? 0;
-        proteins += _toDouble(meal['proteinas_g']) ?? 0;
-        fat += _toDouble(meal['gorduras_g']) ?? 0;
-        fibers += _toDouble(meal['fibras_g']) ?? 0;
+        final mealCarbs = _toDouble(meal['carboidratos_g']) ?? 0;
+        final mealProteins = _toDouble(meal['proteinas_g']) ?? 0;
+        final mealFat = _toDouble(meal['gorduras_g']) ?? 0;
+        final mealFibers = _toDouble(meal['fibras_g']) ?? 0;
+        final mealCalories = _toDouble(meal['calorias_kcal']) ?? 0;
+        final mealSodium = _toDouble(meal['sodio_mg']) ?? 0;
+        final mealPortion = (meal['porcao'] ?? '').toString();
 
-        if (mealId == null) {
-          continue;
-        }
         final itemsRes = await http
             .get(
               Uri.parse('$apiUrl/item/$userId/$mealId'),
@@ -93,38 +160,111 @@ Future<NutritionDailySummary> getTodayNutritionSummary({
             )
             .timeout(const Duration(seconds: 120));
 
-        if (itemsRes.statusCode < 200 || itemsRes.statusCode >= 300) {
-          continue;
+        final itemModels = <MealItemDetails>[];
+        if (itemsRes.statusCode >= 200 && itemsRes.statusCode < 300) {
+          final itemsRaw = _extractList(jsonDecode(itemsRes.body));
+          for (final item in itemsRaw) {
+            itemModels.add(
+              MealItemDetails(
+                id: _toInt(item['id']) ?? 0,
+                alimento: (item['alimento'] ?? '').toString(),
+                porcao: (item['porcao'] ?? '').toString(),
+                caloriasKcal: _toDouble(item['calorias_kcal']) ?? 0,
+                carboidratosG: _toDouble(item['carboidratos_g']) ?? 0,
+                proteinasG: _toDouble(item['proteinas_g']) ?? 0,
+                gordurasG: _toDouble(item['gorduras_g']) ?? 0,
+                fibrasG: _toDouble(item['fibras_g']) ?? 0,
+                sodioMg: _toDouble(item['sodio_mg']) ?? 0,
+                fonte: (item['fonte'] ?? '').toString(),
+              ),
+            );
+          }
         }
-        final items = _extractList(jsonDecode(itemsRes.body));
-        // Fallback only when meal-level macro values are missing.
+
         final mealHasMacros =
-            (_toDouble(meal['carboidratos_g']) ?? 0) > 0 ||
-            (_toDouble(meal['proteinas_g']) ?? 0) > 0 ||
-            (_toDouble(meal['gorduras_g']) ?? 0) > 0 ||
-            (_toDouble(meal['fibras_g']) ?? 0) > 0;
-        if (mealHasMacros) {
-          continue;
-        }
-        for (final item in items) {
-          carbs += _toDouble(item['carboidratos_g']) ?? 0;
-          proteins += _toDouble(item['proteinas_g']) ?? 0;
-          fat += _toDouble(item['gorduras_g']) ?? 0;
-          fibers += _toDouble(item['fibras_g']) ?? 0;
-        }
+            mealCarbs > 0 || mealProteins > 0 || mealFat > 0 || mealFibers > 0;
+        final sumCarbs = itemModels.fold<double>(
+          0,
+          (a, b) => a + b.carboidratosG,
+        );
+        final sumProteins = itemModels.fold<double>(
+          0,
+          (a, b) => a + b.proteinasG,
+        );
+        final sumFat = itemModels.fold<double>(0, (a, b) => a + b.gordurasG);
+        final sumFibers = itemModels.fold<double>(0, (a, b) => a + b.fibrasG);
+        final sumCalories = itemModels.fold<double>(
+          0,
+          (a, b) => a + b.caloriasKcal,
+        );
+        final sumSodium = itemModels.fold<double>(0, (a, b) => a + b.sodioMg);
+
+        final finalCarbs = mealHasMacros ? mealCarbs : sumCarbs;
+        final finalProteins = mealHasMacros ? mealProteins : sumProteins;
+        final finalFat = mealHasMacros ? mealFat : sumFat;
+        final finalFibers = mealHasMacros ? mealFibers : sumFibers;
+        final finalCalories = mealCalories > 0 ? mealCalories : sumCalories;
+        final finalSodium = mealSodium > 0 ? mealSodium : sumSodium;
+
+        carbs += finalCarbs;
+        proteins += finalProteins;
+        fat += finalFat;
+        fibers += finalFibers;
+
+        meals.add(
+          MealDetails(
+            id: mealId,
+            porcao: mealPortion,
+            caloriasKcal: finalCalories,
+            carboidratosG: finalCarbs,
+            proteinasG: finalProteins,
+            gordurasG: finalFat,
+            fibrasG: finalFibers,
+            sodioMg: finalSodium,
+            itens: itemModels,
+          ),
+        );
       }
     }
   }
 
-  return NutritionDailySummary(
-    date: _toDate(daily['data']) ?? localToday,
-    dailyLimit: dailyLimit,
-    calories: calories,
-    carbs: carbs,
-    proteins: proteins,
-    fat: fat,
-    fibers: fibers,
+  return NutritionDailyDashboard(
+    summary: NutritionDailySummary(
+      date: _toDate(daily['data']) ?? localToday,
+      dailyLimit: dailyLimit,
+      calories: calories,
+      carbs: carbs,
+      proteins: proteins,
+      fat: fat,
+      fibers: fibers,
+    ),
+    meals: meals,
+    dailyId: dailyId,
   );
+}
+
+Future<void> deleteMealById({
+  required int userId,
+  required int mealId,
+  required String token,
+}) async {
+  final apiUrl =
+      dotenv.env['NEXT_PUBLIC_API_URL'] ?? dotenv.env['API_URL'] ?? '';
+  final response = await http
+      .delete(
+        Uri.parse('$apiUrl/meal/$userId/$mealId'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      )
+      .timeout(const Duration(seconds: 120));
+
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw Exception(
+      'Falha ao deletar refeição (${response.statusCode}): ${response.body}',
+    );
+  }
 }
 
 Map<String, String> _authHeaders(String token) => {
