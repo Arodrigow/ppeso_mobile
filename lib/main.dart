@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ppeso_mobile/features/meal/pages/meal_page.dart';
 import 'package:ppeso_mobile/features/profile/pages/profile_page.dart';
 import 'package:ppeso_mobile/shared/nav_layout.dart';
+import 'package:ppeso_mobile/shared/requests/daily_requests.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -115,6 +116,16 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
       if (!mounted) return;
 
       if (token != null) {
+        final user = ref.read(userProvider);
+        final userId = _parseUserId(user?['id']);
+        if (userId != null) {
+          try {
+            await ensureDailyForToday(userId: userId, token: token);
+          } catch (_) {
+            // Don't block app entry on daily ensure.
+          }
+        }
+        if (!mounted) return;
         context.replace('/profile');
       } else {
         context.replace('/login');
@@ -148,5 +159,12 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
         ),
       ),
     );
+  }
+
+  int? _parseUserId(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 }

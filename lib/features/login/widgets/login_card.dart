@@ -10,6 +10,7 @@ import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/providers/user_provider.dart';
 import 'package:ppeso_mobile/shared/content.dart';
 import 'package:ppeso_mobile/shared/loading_message.dart';
+import 'package:ppeso_mobile/shared/requests/daily_requests.dart';
 
 class LoginCard extends ConsumerStatefulWidget {
   const LoginCard({super.key});
@@ -78,12 +79,22 @@ class _LoginCardState extends ConsumerState<LoginCard> {
         }
 
         await saveSession(ref, token, user);
+        final userId = _parseUserId(user['id']);
+        if (userId != null) {
+          try {
+            await ensureDailyForToday(userId: userId, token: token);
+          } catch (_) {
+            // Non-blocking: user can continue even if daily ensure fails.
+          }
+        }
         if (!mounted) return;
         context.replace('/profile');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Login failed: ${response.body} STATUS: ${response.statusCode} BODY: ${response.body}'),
+            content: Text(
+              'Login failed: ${response.body} STATUS: ${response.statusCode} BODY: ${response.body}',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -159,5 +170,12 @@ class _LoginCardState extends ConsumerState<LoginCard> {
         ),
       ),
     );
+  }
+
+  int? _parseUserId(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 }

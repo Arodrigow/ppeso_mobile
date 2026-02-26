@@ -29,15 +29,15 @@ Future<NutritionDailySummary> getTodayNutritionSummary({
 }) async {
   final apiUrl =
       dotenv.env['NEXT_PUBLIC_API_URL'] ?? dotenv.env['API_URL'] ?? '';
-  final today = DateTime.now();
-  final todayParam = _toIsoDay(today);
+  final localToday = DateTime.now();
+  final todayParam = _toUtcMidnightIsoFromLocalDay(localToday);
 
   final dailyRes = await http
       .get(
         Uri.parse('$apiUrl/daily?date=$todayParam&userId=$userId'),
         headers: _authHeaders(token),
       )
-      .timeout(const Duration(seconds: 12));
+      .timeout(const Duration(seconds: 120));
 
   if (dailyRes.statusCode < 200 || dailyRes.statusCode >= 300) {
     throw Exception('Failed to load daily (${dailyRes.statusCode})');
@@ -46,7 +46,7 @@ Future<NutritionDailySummary> getTodayNutritionSummary({
   final daily = _extractMap(jsonDecode(dailyRes.body));
   if (daily == null) {
     return NutritionDailySummary(
-      date: today,
+      date: localToday,
       dailyLimit: 0,
       calories: 0,
       carbs: 0,
@@ -58,7 +58,8 @@ Future<NutritionDailySummary> getTodayNutritionSummary({
 
   final dailyId = _toInt(daily['id']);
   final dailyLimit = _toDouble(daily['daily_limit']) ?? 0;
-  double calories = _toDouble(daily['calorias_total']) ?? 0;
+  // Source of truth for consumed calories is the daily aggregate.
+  final calories = _toDouble(daily['calorias_total']) ?? 0;
   double carbs = 0;
   double proteins = 0;
   double fat = 0;
@@ -70,31 +71,42 @@ Future<NutritionDailySummary> getTodayNutritionSummary({
           Uri.parse('$apiUrl/meal/$userId/$dailyId'),
           headers: _authHeaders(token),
         )
-        .timeout(const Duration(seconds: 12));
+        .timeout(const Duration(seconds: 120));
 
     if (mealsRes.statusCode >= 200 && mealsRes.statusCode < 300) {
       final meals = _extractList(jsonDecode(mealsRes.body));
       for (final meal in meals) {
         final mealId = _toInt(meal['id']);
 
-        calories += _toDouble(meal['calorias_kcal']) ?? 0;
         carbs += _toDouble(meal['carboidratos_g']) ?? 0;
         proteins += _toDouble(meal['proteinas_g']) ?? 0;
         fat += _toDouble(meal['gorduras_g']) ?? 0;
         fibers += _toDouble(meal['fibras_g']) ?? 0;
 
-        if (mealId == null) continue;
+        if (mealId == null) {
+          continue;
+        }
         final itemsRes = await http
             .get(
               Uri.parse('$apiUrl/item/$userId/$mealId'),
               headers: _authHeaders(token),
             )
-            .timeout(const Duration(seconds: 12));
+            .timeout(const Duration(seconds: 120));
 
-        if (itemsRes.statusCode < 200 || itemsRes.statusCode >= 300) continue;
+        if (itemsRes.statusCode < 200 || itemsRes.statusCode >= 300) {
+          continue;
+        }
         final items = _extractList(jsonDecode(itemsRes.body));
+        // Fallback only when meal-level macro values are missing.
+        final mealHasMacros =
+            (_toDouble(meal['carboidratos_g']) ?? 0) > 0 ||
+            (_toDouble(meal['proteinas_g']) ?? 0) > 0 ||
+            (_toDouble(meal['gorduras_g']) ?? 0) > 0 ||
+            (_toDouble(meal['fibras_g']) ?? 0) > 0;
+        if (mealHasMacros) {
+          continue;
+        }
         for (final item in items) {
-          calories += _toDouble(item['calorias_kcal']) ?? 0;
           carbs += _toDouble(item['carboidratos_g']) ?? 0;
           proteins += _toDouble(item['proteinas_g']) ?? 0;
           fat += _toDouble(item['gorduras_g']) ?? 0;
@@ -105,7 +117,7 @@ Future<NutritionDailySummary> getTodayNutritionSummary({
   }
 
   return NutritionDailySummary(
-    date: _toDate(daily['data']) ?? today,
+    date: _toDate(daily['data']) ?? localToday,
     dailyLimit: dailyLimit,
     calories: calories,
     carbs: carbs,
@@ -121,11 +133,13 @@ Map<String, String> _authHeaders(String token) => {
   'Authorization': 'Bearer $token',
 };
 
-String _toIsoDay(DateTime date) {
-  final y = date.year.toString().padLeft(4, '0');
-  final m = date.month.toString().padLeft(2, '0');
-  final d = date.day.toString().padLeft(2, '0');
-  return '$y-$m-$d';
+String _toUtcMidnightIsoFromLocalDay(DateTime localDate) {
+  final utcMidnight = DateTime.utc(
+    localDate.year,
+    localDate.month,
+    localDate.day,
+  );
+  return utcMidnight.toIso8601String();
 }
 
 Map<String, dynamic>? _extractMap(dynamic value) {

@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:ppeso_mobile/features/profile/models/date_model.dart';
@@ -63,7 +62,7 @@ Future<void> createWeight({
           },
         }),
       )
-      .timeout(const Duration(seconds: 12));
+      .timeout(const Duration(seconds: 120));
 
   if (response.statusCode < 200 || response.statusCode >= 300) {
     throw Exception(
@@ -82,11 +81,9 @@ Future<void> deleteWeight({
   final response = await http
       .delete(
         Uri.parse('$apiUrl/peso/$userId/$weightId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        }
+        headers: {'Authorization': 'Bearer $token'},
       )
-      .timeout(const Duration(seconds: 12));
+      .timeout(const Duration(seconds: 120));
 
   if (response.statusCode < 200 || response.statusCode >= 300) {
     throw Exception(

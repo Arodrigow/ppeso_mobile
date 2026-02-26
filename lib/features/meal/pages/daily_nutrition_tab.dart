@@ -63,6 +63,8 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
         ? _formatDate(DateTime.now())
         : _formatDate(summary.date);
 
+    final limits = _macroLimits(summary?.dailyLimit ?? 0);
+
     return TabStructure(
       children: [
         Row(
@@ -86,12 +88,20 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
             title: 'Calorias',
             rows: [
               _row(
-                'Máximo diário',
+                'Maximo diario',
                 '${summary.dailyLimit.toStringAsFixed(0)} kcal',
               ),
               _row(
                 'Consumido hoje',
                 '${summary.calories.toStringAsFixed(0)} kcal',
+              ),
+              const SizedBox(height: 6),
+              _progressRow(
+                label: 'Progresso calorias',
+                current: summary.calories,
+                limit: summary.dailyLimit,
+                color: AppColors.primary,
+                unit: 'kcal',
               ),
             ],
           ),
@@ -100,14 +110,38 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
             title: 'Macros (hoje)',
             rows: [
               _row('Carboidratos', '${summary.carbs.toStringAsFixed(1)} g'),
-              _row('Proteínas', '${summary.proteins.toStringAsFixed(1)} g'),
+              _progressRow(
+                label: 'Meta carbos',
+                current: summary.carbs,
+                limit: limits.carbs,
+                color: Colors.orange,
+                unit: 'g',
+              ),
+              const SizedBox(height: 8),
+              _row('Proteinas', '${summary.proteins.toStringAsFixed(1)} g'),
+              _progressRow(
+                label: 'Meta proteinas',
+                current: summary.proteins,
+                limit: limits.proteins,
+                color: Colors.blue,
+                unit: 'g',
+              ),
+              const SizedBox(height: 8),
               _row('Gorduras', '${summary.fat.toStringAsFixed(1)} g'),
+              _progressRow(
+                label: 'Meta gorduras',
+                current: summary.fat,
+                limit: limits.fat,
+                color: Colors.deepPurple,
+                unit: 'g',
+              ),
+              const SizedBox(height: 8),
               _row('Fibras', '${summary.fibers.toStringAsFixed(1)} g'),
             ],
           ),
         ],
         if (summary == null && !_isLoading && _error == null)
-          const Text('Sem dados diários disponíveis.'),
+          const Text('Sem dados diarios disponiveis.'),
       ],
     );
   }
@@ -142,6 +176,62 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
     );
   }
 
+  Widget _progressRow({
+    required String label,
+    required double current,
+    required double limit,
+    required Color color,
+    required String unit,
+  }) {
+    final safeLimit = limit <= 0 ? 0 : limit;
+    final ratio = safeLimit == 0 ? 0.0 : (current / safeLimit);
+    final normalized = ratio.clamp(0.0, 1.0);
+    final percent = (ratio * 100).clamp(0, 999).toStringAsFixed(0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: AppTextStyles.description),
+            Text(
+              safeLimit == 0
+                  ? '-'
+                  : '${current.toStringAsFixed(1)} / ${safeLimit.toStringAsFixed(1)} $unit ($percent%)',
+              style: AppTextStyles.description,
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: LinearProgressIndicator(
+            minHeight: 8,
+            value: normalized,
+            color: color,
+            backgroundColor: Colors.grey.shade300,
+          ),
+        ),
+      ],
+    );
+  }
+
+  _MacroLimits _macroLimits(double caloriesLimit) {
+    if (caloriesLimit <= 0) {
+      return const _MacroLimits(proteins: 0, fat: 0, carbs: 0);
+    }
+
+    // Protein = (Calories * 0.32) / 4
+    // Fat     = (Calories * 0.28) / 9
+    // Carbs   = (Calories * 0.40) / 4
+    final proteins = (caloriesLimit * 0.32) / 4;
+    final fat = (caloriesLimit * 0.28) / 9;
+    final carbs = (caloriesLimit * 0.40) / 4;
+
+    return _MacroLimits(proteins: proteins, fat: fat, carbs: carbs);
+  }
+
   String _formatDate(DateTime date) {
     final d = date.day.toString().padLeft(2, '0');
     final m = date.month.toString().padLeft(2, '0');
@@ -155,4 +245,16 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
     if (value is String) return int.tryParse(value);
     return null;
   }
+}
+
+class _MacroLimits {
+  final double proteins;
+  final double fat;
+  final double carbs;
+
+  const _MacroLimits({
+    required this.proteins,
+    required this.fat,
+    required this.carbs,
+  });
 }

@@ -86,7 +86,7 @@ class _WeightTabState extends ConsumerState<WeightTab> {
       final data = await getWeightHistory(
         userId: userId,
         token: token,
-      ).timeout(const Duration(seconds: 12));
+      ).timeout(const Duration(seconds: 120));
       if (!mounted) return;
       setState(() {
         _weightData
