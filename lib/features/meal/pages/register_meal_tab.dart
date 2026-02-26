@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/features/meal/models/recipe_analysis_model.dart';
-import 'package:ppeso_mobile/features/meal/models/user_recipe_model.dart';
 import 'package:ppeso_mobile/features/meal/providers/user_recipes_provider.dart';
 import 'package:ppeso_mobile/features/profile/widgets/custom_modal.dart';
 import 'package:ppeso_mobile/providers/user_provider.dart';
@@ -106,7 +105,12 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
       confirmText: 'Yes',
       onConfirm: () async {
         try {
+          final user = ref.read(userProvider);
           final token = ref.read(authTokenProvider);
+          final userId = _parseUserId(user?['id']);
+          if (userId == null || token == null || token.isEmpty) {
+            throw Exception('Invalid user session');
+          }
           final nutrition = RecipeAnalysisModel(
             calories: result.total.caloriasKcal,
             carbo: result.total.carboidratosG,
@@ -114,9 +118,10 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
             fat: result.total.gordurasG,
             fibers: result.total.fibrasG,
           );
-          await withLoading(
+          final createdRecipe = await withLoading(
             context,
             () => saveRecipe(
+              userId: userId,
               title: _titleController.text.trim(),
               description: _descriptionController.text.trim(),
               recipe: _recipeController.text.trim(),
@@ -125,15 +130,7 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
             ),
           );
 
-          prependRecipeToUserList(
-            ref,
-            UserRecipeModel(
-              id: DateTime.now().millisecondsSinceEpoch.toString(),
-              title: _titleController.text.trim(),
-              description: _descriptionController.text.trim(),
-              recipe: _recipeController.text.trim(),
-            ),
-          );
+          prependRecipeToUserList(ref, createdRecipe);
 
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(

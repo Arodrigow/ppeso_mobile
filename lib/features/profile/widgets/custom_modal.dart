@@ -40,16 +40,16 @@ class CustomModal {
         title: Text(title),
         content: Text(message),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(cancelText),
-          ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               if (onConfirm != null) onConfirm();
             },
             child: Text(confirmText),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(cancelText),
           ),
         ],
       ),
