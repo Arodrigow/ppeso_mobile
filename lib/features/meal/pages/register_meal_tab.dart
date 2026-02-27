@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/features/meal/models/recipe_analysis_model.dart';
 import 'package:ppeso_mobile/features/meal/providers/user_recipes_provider.dart';
@@ -22,6 +24,10 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _recipeController = TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
+  final TextRecognizer _textRecognizer = TextRecognizer(
+    script: TextRecognitionScript.latin,
+  );
   NutritionAnalysisResult? _lastAnalysis;
 
   @override
@@ -29,6 +35,7 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
     _titleController.dispose();
     _descriptionController.dispose();
     _recipeController.dispose();
+    _textRecognizer.close();
     super.dispose();
   }
 
@@ -39,6 +46,82 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
       _recipeController.clear();
       _lastAnalysis = null;
     });
+  }
+
+  Future<void> _askOcrSource() async {
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Ler com camera'),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _readTextFromImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Escolher da galeria'),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _readTextFromImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _readTextFromImage(ImageSource source) async {
+    try {
+      final image = await _imagePicker.pickImage(source: source);
+      if (image == null) return;
+      if (!mounted) return;
+
+      final text = await withLoading(
+        context,
+        () async {
+          final inputImage = InputImage.fromFilePath(image.path);
+          final recognized = await _textRecognizer.processImage(inputImage);
+          return recognized.text.trim();
+        },
+      );
+
+      if (!mounted) return;
+      if (text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nenhum texto encontrado na imagem.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      setState(() {
+        final current = _recipeController.text.trim();
+        _recipeController.text = current.isEmpty ? text : '$current\n\n$text';
+        _recipeController.selection = TextSelection.fromPosition(
+          TextPosition(offset: _recipeController.text.length),
+        );
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao ler imagem: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _analyzeRecipe() async {
@@ -255,6 +338,19 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
           ),
         ),
         const SizedBox(height: 15),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            onPressed: _askOcrSource,
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              visualDensity: VisualDensity.compact,
+            ),
+            icon: const Icon(Icons.document_scanner, size: 18),
+            label: const Text('Ler imagem'),
+          ),
+        ),
+        const SizedBox(height: 8),
         TextFormField(
           controller: _recipeController,
           minLines: 6,
@@ -266,8 +362,10 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
           ),
         ),
         const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          alignment: WrapAlignment.center,
           children: [
             ElevatedButton.icon(
               onPressed: _analyzeRecipe,
