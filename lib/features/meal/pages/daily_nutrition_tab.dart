@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/providers/user_provider.dart';
@@ -34,7 +34,7 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
 
     if (userId == null || token == null || token.isEmpty) {
       if (!mounted) return;
-      setState(() => _error = 'Invalid user session.');
+      setState(() => _error = 'Sessão de usuário inválida.');
       return;
     }
 
@@ -94,7 +94,7 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
               onPressed: widget.onOpenNewMeal,
               style: ButtonStyles.defaultAcceptButton,
               icon: const Icon(Icons.add),
-              label: const Text('Nova Refeicao'),
+              label: const Text('Nova Refeição'),
             ),
           ],
         ),
@@ -107,16 +107,16 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
             title: 'Calorias',
             rows: [
               _row(
-                'Maximo diario',
+                'Máximo diário',
                 '${summary.dailyLimit.toStringAsFixed(0)} kcal',
               ),
               _row(
-                'Consumido hoje',
+                'Consumido no dia',
                 '${summary.calories.toStringAsFixed(0)} kcal',
               ),
               const SizedBox(height: 6),
               _progressRow(
-                label: 'Progresso calorias',
+                label: 'Progresso de calorias',
                 current: summary.calories,
                 limit: summary.dailyLimit,
                 color: AppColors.primary,
@@ -137,9 +137,9 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
                 unit: 'g',
               ),
               const SizedBox(height: 8),
-              _row('Proteinas', '${summary.proteins.toStringAsFixed(1)} g'),
+              _row('Proteínas', '${summary.proteins.toStringAsFixed(1)} g'),
               _progressRow(
-                label: 'Meta proteinas',
+                label: 'Meta de proteínas',
                 current: summary.proteins,
                 limit: limits.proteins,
                 color: Colors.blue,
@@ -148,7 +148,7 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
               const SizedBox(height: 8),
               _row('Gorduras', '${summary.fat.toStringAsFixed(1)} g'),
               _progressRow(
-                label: 'Meta gorduras',
+                label: 'Meta de gorduras',
                 current: summary.fat,
                 limit: limits.fat,
                 color: Colors.deepPurple,
@@ -186,7 +186,7 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
           ),
         ],
         if (summary == null && !_isLoading && _error == null)
-          const Text('Sem dados diarios disponiveis.'),
+          const Text('Sem dados diários disponíveis.'),
       ],
     );
   }
@@ -265,7 +265,7 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
                       style: ButtonStyles.defaultAcceptButton.copyWith(
                         backgroundColor: WidgetStateProperty.all(Colors.red),
                       ),
-                      child: const Text('Deletar refeição'),
+                      child: const Text('Excluir refeição'),
                     ),
                     ElevatedButton(
                       onPressed: () => Navigator.of(ctx).pop(),
@@ -298,13 +298,13 @@ class _DailyNutritionTabState extends ConsumerState<DailyNutritionTab> {
       await _load(forceRefresh: true);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Refeição deletada com sucesso.')),
+        const SnackBar(content: Text('Refeição excluída com sucesso.')),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erro ao deletar refeição: $e'),
+          content: Text('Erro ao excluir refeição: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -435,3 +435,5 @@ class _MacroLimits {
     required this.carbs,
   });
 }
+
+

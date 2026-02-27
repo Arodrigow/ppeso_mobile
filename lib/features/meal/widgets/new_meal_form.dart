@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/features/meal/models/meal_item_model.dart';
@@ -76,7 +76,7 @@ class _MealFormState extends ConsumerState<MealForm> {
     if (userId == null || token == null || token.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Sessao invalida. Faca login novamente.'),
+          content: Text('Sessão inválida. Faça login novamente.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -109,7 +109,7 @@ class _MealFormState extends ConsumerState<MealForm> {
     if (preparedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Adicione ao menos um item valido para analisar.'),
+          content: Text('Adicione ao menos um item válido para analisar.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -148,7 +148,7 @@ class _MealFormState extends ConsumerState<MealForm> {
             )
             .join('; ');
         final analysisPrompt =
-            'Faca a analise nutricional em portugues-BR para estes itens: $payloadText';
+            'Faça a análise nutricional em português-BR para estes itens: $payloadText';
 
         unknownAnalysis = await withLoading(
           context,
@@ -178,7 +178,7 @@ class _MealFormState extends ConsumerState<MealForm> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Falha na analise nutricional: $e'),
+          content: Text('Falha na análise nutricional: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -242,12 +242,12 @@ class _MealFormState extends ConsumerState<MealForm> {
         await ensureDailyForToday(userId: userId, token: token);
         final daily = await getTodayDaily(userId: userId, token: token);
         if (daily == null) {
-          throw Exception('Daily not available for today');
+          throw Exception('Diário indisponível para hoje');
         }
 
         final dailyId = _parseUserId(daily['id']);
         if (dailyId == null) {
-          throw Exception('Invalid daily ID');
+          throw Exception('ID de diário inválido');
         }
 
         final dailyLimit = _toDouble(daily['daily_limit']);
@@ -274,14 +274,14 @@ class _MealFormState extends ConsumerState<MealForm> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Refeicao e itens criados com sucesso.'),
+          content: Text('Refeição e itens criados com sucesso.'),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Falha ao criar refeicao/itens: $e'),
+          content: Text('Falha ao criar refeição/itens: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -300,7 +300,7 @@ class _MealFormState extends ConsumerState<MealForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Analise nutricional', style: AppTextStyles.subTitle),
+                  Text('Análise nutricional', style: AppTextStyles.subTitle),
                   const SizedBox(height: 12),
                   if (analysis.hasWarning)
                     Text(
@@ -316,7 +316,7 @@ class _MealFormState extends ConsumerState<MealForm> {
                     '${analysis.total.carboidratosG.toStringAsFixed(1)} g',
                   ),
                   _resultRow(
-                    'Proteinas',
+                    'Proteínas',
                     '${analysis.total.proteinasG.toStringAsFixed(1)} g',
                   ),
                   _resultRow(
@@ -331,7 +331,7 @@ class _MealFormState extends ConsumerState<MealForm> {
                   Text('Itens', style: AppTextStyles.bodyBold),
                   const SizedBox(height: 6),
                   if (analysis.itens.isEmpty)
-                    const Text('Nenhum item retornado pela analise.'),
+                    const Text('Nenhum item retornado pela análise.'),
                   ...analysis.itens.map(
                     (item) => Padding(
                       padding: const EdgeInsets.only(bottom: 6),
@@ -629,3 +629,5 @@ class _PreparedItem {
 double _toDoubleQty(String value) {
   return double.tryParse(value.replaceAll(',', '.')) ?? 0;
 }
+
+

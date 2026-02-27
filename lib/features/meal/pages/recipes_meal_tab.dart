@@ -41,7 +41,7 @@ class _RecipesMealTabState extends ConsumerState<RecipesMealTab> {
 
     if (userId == null || token == null || token.isEmpty) {
       if (!mounted) return;
-      setState(() => _error = 'Invalid user session.');
+      setState(() => _error = 'Sessão de usuário inválida.');
       return;
     }
 
@@ -62,7 +62,7 @@ class _RecipesMealTabState extends ConsumerState<RecipesMealTab> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Failed to load recipes: $e';
+        _error = 'Falha ao carregar receitas: $e';
         _isLoading = false;
       });
     }
@@ -71,10 +71,10 @@ class _RecipesMealTabState extends ConsumerState<RecipesMealTab> {
   Future<void> _askDeleteRecipe(UserRecipeModel recipe) async {
     await CustomModal.dialog(
       context,
-      title: 'Delete recipe',
-      message: 'Do you want to delete "${recipe.title}"?',
-      cancelText: 'Cancel',
-      confirmText: 'Delete',
+      title: 'Excluir receita',
+      message: 'Deseja excluir "${recipe.title}"?',
+      cancelText: 'Cancelar',
+      confirmText: 'Excluir',
       onConfirm: () async {
         final user = ref.read(userProvider);
         final token = ref.read(authTokenProvider);
@@ -91,13 +91,13 @@ class _RecipesMealTabState extends ConsumerState<RecipesMealTab> {
           removeRecipeFromUserList(ref, recipe.id);
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Recipe deleted successfully.')),
+            const SnackBar(content: Text('Receita excluída com sucesso.')),
           );
         } catch (e) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to delete recipe: $e'),
+              content: Text('Falha ao excluir receita: $e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -163,7 +163,7 @@ class _RecipesMealTabState extends ConsumerState<RecipesMealTab> {
                   child: Text(recipe.title, style: AppTextStyles.bodyBold),
                 ),
                 IconButton(
-                  tooltip: 'Delete recipe',
+                  tooltip: 'Excluir receita',
                   onPressed: () => _askDeleteRecipe(recipe),
                   icon: const Icon(Icons.delete, color: Colors.red),
                 ),
@@ -178,7 +178,7 @@ class _RecipesMealTabState extends ConsumerState<RecipesMealTab> {
                 TextButton.icon(
                   onPressed: () => _openFullRecipe(recipe),
                   icon: const Icon(Icons.menu_book),
-                  label: const Text('Open'),
+                  label: const Text('Abrir'),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
@@ -186,7 +186,7 @@ class _RecipesMealTabState extends ConsumerState<RecipesMealTab> {
                     widget.onOpenNewMeal?.call(recipe.title);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('"${recipe.title}" added to New Meal.'),
+                        content: Text('"${recipe.title}" adicionada à refeição.'),
                       ),
                     );
                   },
@@ -212,7 +212,7 @@ class _RecipesMealTabState extends ConsumerState<RecipesMealTab> {
           const SizedBox(height: 10),
           Text(recipe.description, style: AppTextStyles.body),
           const SizedBox(height: 14),
-          Text('Full recipe', style: AppTextStyles.bodyBold),
+          Text('Receita completa', style: AppTextStyles.bodyBold),
           const SizedBox(height: 8),
           Text(recipe.recipe, style: AppTextStyles.body),
           const SizedBox(height: 20),
@@ -229,7 +229,7 @@ class _RecipesMealTabState extends ConsumerState<RecipesMealTab> {
               ),
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Close'),
+                child: const Text('Fechar'),
               ),
             ],
           ),

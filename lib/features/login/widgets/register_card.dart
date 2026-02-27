@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -72,7 +72,7 @@ class _RegisterCardState extends ConsumerState<RegisterCard> {
     if (_birthday == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Select birthday.'),
+          content: Text('Selecione a data de nascimento.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -116,13 +116,13 @@ class _RegisterCardState extends ConsumerState<RegisterCard> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration completed successfully.')),
+          const SnackBar(content: Text('Cadastro realizado com sucesso.')),
         );
         context.pop();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Registration failed: ${response.body}'),
+            content: Text('Falha no cadastro: ${response.body}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -131,7 +131,7 @@ class _RegisterCardState extends ConsumerState<RegisterCard> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Registration error: $e'),
+          content: Text('Erro no cadastro: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -148,16 +148,16 @@ class _RegisterCardState extends ConsumerState<RegisterCard> {
 
   String? _requiredValidator(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Required field';
+      return 'Campo obrigatório';
     }
     return null;
   }
 
   String? _numberValidator(String? value) {
-    if (_requiredValidator(value) != null) return 'Required field';
+    if (_requiredValidator(value) != null) return 'Campo obrigatório';
     final normalized = value!.replaceAll(',', '.');
     if (double.tryParse(normalized) == null) {
-      return 'Invalid number';
+      return 'Número inválido';
     }
     return null;
   }
@@ -232,7 +232,7 @@ class _RegisterCardState extends ConsumerState<RegisterCard> {
                 readOnly: true,
                 onTap: _pickBirthday,
                 decoration: _inputDecoration(
-                  'Aniversario',
+                  'Aniversário',
                 ).copyWith(suffixIcon: const Icon(Icons.calendar_month)),
                 validator: _requiredValidator,
               ),
@@ -261,16 +261,16 @@ class _RegisterCardState extends ConsumerState<RegisterCard> {
                 decoration: _inputDecoration('Altura (cm)'),
                 validator: (value) {
                   if (_requiredValidator(value) != null) {
-                    return 'Required field';
+                    return 'Campo obrigatório';
                   }
-                  if (int.tryParse(value!) == null) return 'Invalid number';
+                  if (int.tryParse(value!) == null) return 'Número inválido';
                   return null;
                 },
               ),
               const SizedBox(height: 14),
               DropdownButtonFormField<ExerciseLevel>(
                 initialValue: _selectedActivity,
-                decoration: _inputDecoration('Nivel de atividade fisica'),
+                decoration: _inputDecoration('Nível de atividade física'),
                 items: ExerciseLevel.values
                     .map(
                       (level) => DropdownMenuItem(
@@ -307,3 +307,5 @@ class _RegisterCardState extends ConsumerState<RegisterCard> {
     );
   }
 }
+
+

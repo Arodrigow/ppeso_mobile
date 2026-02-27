@@ -59,7 +59,7 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
             children: [
               ListTile(
                 leading: const Icon(Icons.camera_alt),
-                title: const Text('Ler com camera'),
+                title: const Text('Ler com câmera'),
                 onTap: () {
                   Navigator.of(ctx).pop();
                   _readTextFromImage(ImageSource.camera);
@@ -135,7 +135,7 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
     if (title.isEmpty || description.isEmpty || recipe.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Fill title, description and recipe before analyzing.'),
+          content: Text('Preencha título, descrição e receita antes de analisar.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -145,7 +145,7 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
     if (userId == null || token == null || token.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Invalid user session.'),
+          content: Text('Sessão de usuário inválida.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -153,8 +153,8 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
     }
 
     final analysisPrompt =
-        'Faca a analise nutricional em portugues-BR para a seguinte receita. '
-        'Titulo: $title. Descricao: $description. Receita: $recipe';
+        'Faça a análise nutricional em português-BR para a seguinte receita. '
+        'Título: $title. Descrição: $description. Receita: $recipe';
 
     try {
       final result = await withLoading(
@@ -172,7 +172,7 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to analyze recipe: $e'),
+          content: Text('Falha ao analisar receita: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -182,17 +182,17 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
   Future<void> _askSaveRecipe(NutritionAnalysisResult result) async {
     await CustomModal.dialog(
       context,
-      title: 'Save recipe',
-      message: 'Do you want to send this recipe to the database?',
-      cancelText: 'No',
-      confirmText: 'Yes',
+      title: 'Salvar receita',
+      message: 'Deseja enviar esta receita para o banco de dados?',
+      cancelText: 'Não',
+      confirmText: 'Sim',
       onConfirm: () async {
         try {
           final user = ref.read(userProvider);
           final token = ref.read(authTokenProvider);
           final userId = _parseUserId(user?['id']);
           if (userId == null || token == null || token.isEmpty) {
-            throw Exception('Invalid user session');
+            throw Exception('Sessão de usuário inválida');
           }
           final nutrition = RecipeAnalysisModel(
             calories: result.total.caloriasKcal,
@@ -220,14 +220,14 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
           if (!mounted) return;
           if (!popped) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Recipe saved successfully.')),
+              const SnackBar(content: Text('Receita salva com sucesso.')),
             );
           }
         } catch (e) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to save recipe: $e'),
+              content: Text('Falha ao salvar receita: $e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -242,30 +242,30 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Nutritional values', style: AppTextStyles.subTitle),
+          Text('Valores nutricionais', style: AppTextStyles.subTitle),
           const SizedBox(height: 16),
           if (result.hasWarning) ...[
             Text(result.other!, style: const TextStyle(color: Colors.orange)),
             const SizedBox(height: 10),
           ],
           _nutritionRow(
-            'Calories',
+            'Calorias',
             '${result.total.caloriasKcal.toStringAsFixed(2)} kcal',
           ),
           _nutritionRow(
-            'Carbo',
+            'Carboidratos',
             '${result.total.carboidratosG.toStringAsFixed(2)} g',
           ),
           _nutritionRow(
-            'Proteins',
+            'Proteínas',
             '${result.total.proteinasG.toStringAsFixed(2)} g',
           ),
           _nutritionRow(
-            'Fat',
+            'Gorduras',
             '${result.total.gordurasG.toStringAsFixed(2)} g',
           ),
           _nutritionRow(
-            'Fibers',
+            'Fibras',
             '${result.total.fibrasG.toStringAsFixed(2)} g',
           ),
           const SizedBox(height: 20),
@@ -278,11 +278,11 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
                   _askSaveRecipe(result);
                 },
                 style: ButtonStyles.defaultAcceptButton,
-                child: const Text('Send to database'),
+                child: const Text('Enviar para o banco'),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Close'),
+                child: const Text('Fechar'),
               ),
             ],
           ),
@@ -321,7 +321,7 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
         TextFormField(
           controller: _titleController,
           decoration: InputDecoration(
-            labelText: 'Title',
+            labelText: 'Título',
             enabledBorder: TextInputStyles.enabledDefault,
             focusedBorder: TextInputStyles.focusDefault,
           ),
@@ -332,7 +332,7 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
           minLines: 2,
           maxLines: 4,
           decoration: InputDecoration(
-            labelText: 'Description',
+            labelText: 'Descrição',
             enabledBorder: TextInputStyles.enabledDefault,
             focusedBorder: TextInputStyles.focusDefault,
           ),
@@ -356,7 +356,7 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
           minLines: 6,
           maxLines: 10,
           decoration: InputDecoration(
-            labelText: 'Food recipe',
+            labelText: 'Receita',
             enabledBorder: TextInputStyles.enabledDefault,
             focusedBorder: TextInputStyles.focusDefault,
           ),
@@ -370,7 +370,7 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
             ElevatedButton.icon(
               onPressed: _analyzeRecipe,
               icon: const Icon(Icons.analytics),
-              label: const Text('Analyze'),
+              label: const Text('Analisar'),
               style: ButtonStyles.defaultAcceptButton,
             ),
             ElevatedButton.icon(
@@ -382,7 +382,7 @@ class _RegisterMealTabState extends ConsumerState<RegisterMealTab> {
         ),
         if (_lastAnalysis != null) ...[
           const SizedBox(height: 20),
-          Text('Latest analysis available', style: AppTextStyles.description),
+          Text('Última análise disponível', style: AppTextStyles.description),
         ],
       ],
     );

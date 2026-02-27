@@ -56,7 +56,7 @@ class MealPage extends StatelessWidget {
               onOpenNewMeal: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => _StandaloneTabPage(
-                    title: 'Nova refeicao',
+                    title: 'Nova refeição',
                     child: const NewMealTab(),
                   ),
                 ),
@@ -66,7 +66,7 @@ class MealPage extends StatelessWidget {
               onOpenNewMeal: (initialFirstItem) => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => _StandaloneTabPage(
-                    title: 'Nova refeicao',
+                    title: 'Nova refeição',
                     child: NewMealTab(initialFirstItem: initialFirstItem),
                   ),
                 ),

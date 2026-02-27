@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -37,7 +37,7 @@ class _LoginCardState extends ConsumerState<LoginCard> {
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Invalid email or password'),
+          content: Text('E-mail ou senha inválidos'),
           backgroundColor: Colors.red,
         ),
       );
@@ -71,7 +71,7 @@ class _LoginCardState extends ConsumerState<LoginCard> {
         if (token is! String || user is! Map<String, dynamic>) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Invalid login response from server.'),
+              content: Text('Resposta de login inválida do servidor.'),
               backgroundColor: Colors.red,
             ),
           );
@@ -88,12 +88,12 @@ class _LoginCardState extends ConsumerState<LoginCard> {
           }
         }
         if (!mounted) return;
-        context.replace('/profile');
+        context.replace('/meal');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Login failed: ${response.body} STATUS: ${response.statusCode} BODY: ${response.body}',
+              'Falha no login: ${response.body} STATUS: ${response.statusCode} BODY: ${response.body}',
             ),
             backgroundColor: Colors.red,
           ),
@@ -102,7 +102,7 @@ class _LoginCardState extends ConsumerState<LoginCard> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -179,3 +179,5 @@ class _LoginCardState extends ConsumerState<LoginCard> {
     return null;
   }
 }
+
+

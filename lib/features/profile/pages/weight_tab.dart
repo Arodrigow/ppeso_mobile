@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -103,7 +103,7 @@ class _WeightTabState extends ConsumerState<WeightTab> {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Failed to load weights: $e"),
+          content: Text("Falha ao carregar pesos: $e"),
           backgroundColor: Colors.red,
         ),
       );
@@ -140,7 +140,7 @@ class _WeightTabState extends ConsumerState<WeightTab> {
     if (userId == null || token == null || token.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Invalid user session. Please login again."),
+          content: Text("Sessão de usuário inválida. Faça login novamente."),
           backgroundColor: Colors.red,
         ),
       );
@@ -151,7 +151,7 @@ class _WeightTabState extends ConsumerState<WeightTab> {
     if (weight == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Invalid weight value"),
+          content: Text("Valor de peso inválido"),
           backgroundColor: Colors.red,
         ),
       );
@@ -173,13 +173,13 @@ class _WeightTabState extends ConsumerState<WeightTab> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Weight added successfully")),
+        const SnackBar(content: Text("Peso adicionado com sucesso")),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Failed to add weight: $e"),
+          content: Text("Falha ao adicionar peso: $e"),
           backgroundColor: Colors.red,
         ),
       );
@@ -194,7 +194,7 @@ class _WeightTabState extends ConsumerState<WeightTab> {
     if (userId == null || token == null || token.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Invalid user session. Please login again."),
+          content: Text("Sessão de usuário inválida. Faça login novamente."),
           backgroundColor: Colors.red,
         ),
       );
@@ -203,7 +203,7 @@ class _WeightTabState extends ConsumerState<WeightTab> {
     if (weight.id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("This weight does not have an ID to delete."),
+          content: Text("Este peso não possui ID para exclusão."),
           backgroundColor: Colors.red,
         ),
       );
@@ -225,12 +225,12 @@ class _WeightTabState extends ConsumerState<WeightTab> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text("Weight deleted")));
+      ).showSnackBar(const SnackBar(content: Text("Peso excluído")));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Failed to delete weight: $e"),
+          content: Text("Falha ao excluir peso: $e"),
           backgroundColor: Colors.red,
         ),
       );
@@ -417,3 +417,5 @@ class _WeightTabState extends ConsumerState<WeightTab> {
     await saveSession(ref, token, updatedUser);
   }
 }
+
+

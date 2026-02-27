@@ -30,8 +30,8 @@ class CustomModal {
     BuildContext context, {
     required String title,
     required String message,
-    String cancelText = "Cancel",
-    String confirmText = "OK",
+    String cancelText = "Cancelar",
+    String confirmText = "Confirmar",
     VoidCallback? onConfirm,
   }) {
     return showDialog<T>(

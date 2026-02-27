@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ppeso_mobile/core/styles.dart';
 import 'package:ppeso_mobile/features/profile/models/user.dart';
@@ -131,7 +131,7 @@ class _HealthTabState extends ConsumerState<HealthTab> {
                               if (!success) {
                                 messenger.showSnackBar(
                                   const SnackBar(
-                                    content: Text("Failed to update user"),
+                                    content: Text("Falha ao atualizar usuário"),
                                   ),
                                 );
                               }
@@ -240,7 +240,7 @@ class _HealthTabState extends ConsumerState<HealthTab> {
                               if (!success) {
                                 messenger.showSnackBar(
                                   const SnackBar(
-                                    content: Text("Failed to update user"),
+                                    content: Text("Falha ao atualizar usuário"),
                                   ),
                                 );
                               }
@@ -349,7 +349,7 @@ class _HealthTabState extends ConsumerState<HealthTab> {
                               if (!success) {
                                 messenger .showSnackBar(
                                   const SnackBar(
-                                    content: Text("Failed to update user"),
+                                    content: Text("Falha ao atualizar usuário"),
                                   ),
                                 );
                               }
@@ -452,3 +452,5 @@ class _HealthTabState extends ConsumerState<HealthTab> {
     );
   }
 }
+
+
