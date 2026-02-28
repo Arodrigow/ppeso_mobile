@@ -278,11 +278,7 @@ class _MealFormState extends ConsumerState<MealForm> {
       });
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Refeição e itens criados com sucesso.'),
-        ),
-      );
+      await Navigator.of(context).maybePop(true);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
