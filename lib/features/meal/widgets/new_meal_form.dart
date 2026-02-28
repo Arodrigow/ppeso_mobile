@@ -1,6 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ppeso_mobile/core/styles.dart';
+import 'package:ppeso_mobile/features/profile/models/user.dart';
+import 'package:ppeso_mobile/shared/calculate_age.dart';
+import 'package:ppeso_mobile/shared/calorie_calc.dart';
 import 'package:ppeso_mobile/features/meal/models/meal_item_model.dart';
 import 'package:ppeso_mobile/features/meal/models/user_recipe_model.dart';
 import 'package:ppeso_mobile/features/meal/providers/user_recipes_provider.dart';
@@ -250,7 +253,10 @@ class _MealFormState extends ConsumerState<MealForm> {
           throw Exception('ID de diário inválido');
         }
 
-        final dailyLimit = _toDouble(daily['daily_limit']);
+        final dailyLimit = _resolveDailyLimitFromUser(
+          user,
+          _toDouble(daily['daily_limit']),
+        );
         final mealId = await createMeal(
           userId: userId,
           token: token,
@@ -579,6 +585,59 @@ class _MealFormState extends ConsumerState<MealForm> {
       return double.tryParse(value.replaceAll(',', '.')) ?? 0;
     }
     return 0;
+  }
+
+  double _resolveDailyLimitFromUser(
+    Map<String, dynamic>? userRaw,
+    double fallback,
+  ) {
+    try {
+      final user = User.fromJson(userRaw);
+      if (user.altura <= 0 || user.pesoNow <= 0 || user.aniversario.isEmpty) {
+        return fallback > 0 ? fallback : 0;
+      }
+
+      final age = calculateAge(user.aniversario);
+      final dailyBase = calorieCalculator(
+        user.pesoNow,
+        user.altura,
+        age,
+        user.gender,
+        user.atividade,
+        user.regimeCalorico,
+      );
+      final maintain = calorieCalculator(
+        user.pesoNow,
+        user.altura,
+        age,
+        user.gender,
+        user.atividade,
+        CalorieStrat.Manter,
+      );
+
+      switch (user.estrategia) {
+        case Strategy.ZigZag_UM:
+        case Strategy.ZigZag_DOIS:
+          final cycle = calculateZigZagCalories(
+            dailyBase,
+            maintain,
+            user.gender,
+            user.regimeCalorico,
+            user.estrategia,
+          );
+          if (cycle.isNotEmpty) {
+            final todayIndex = DateTime.now().weekday % 7;
+            final value = cycle[todayIndex].toDouble();
+            if (value > 0) return value;
+          }
+          return dailyBase > 0 ? dailyBase : (fallback > 0 ? fallback : 0);
+        case Strategy.Fixo:
+        case Strategy.sCustom:
+          return dailyBase > 0 ? dailyBase : (fallback > 0 ? fallback : 0);
+      }
+    } catch (_) {
+      return fallback > 0 ? fallback : 0;
+    }
   }
 
   bool _isKnownRecipeTitle(String rawName) {
