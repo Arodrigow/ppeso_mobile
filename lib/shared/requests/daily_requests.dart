@@ -36,22 +36,32 @@ Future<Map<String, dynamic>?> getTodayDaily({
 
   final apiUrl =
       dotenv.env['NEXT_PUBLIC_API_URL'] ?? dotenv.env['API_URL'] ?? '';
+  final localDay = _localDayKey(DateTime.now());
   final dateIsoUtc = _utcMidnightIsoFromLocalDay(DateTime.now());
 
-  final response = await http
-      .get(
-        Uri.parse('$apiUrl/daily?date=$dateIsoUtc&userId=$userId'),
-        headers: _authHeaders(token),
-      )
-      .timeout(const Duration(seconds: 120));
+  final response = await _getDailyWithDate(
+    apiUrl: apiUrl,
+    token: token,
+    userId: userId,
+    dateParam: localDay,
+  );
+  final resolvedResponse =
+      (response.statusCode >= 200 && response.statusCode < 300)
+      ? response
+      : await _getDailyWithDate(
+          apiUrl: apiUrl,
+          token: token,
+          userId: userId,
+          dateParam: dateIsoUtc,
+        );
 
-  if (response.statusCode < 200 || response.statusCode >= 300) {
+  if (resolvedResponse.statusCode < 200 || resolvedResponse.statusCode >= 300) {
     throw Exception(
-      'Failed to load daily (${response.statusCode}): ${response.body}',
+      'Failed to load daily (${resolvedResponse.statusCode}): ${resolvedResponse.body}',
     );
   }
 
-  final parsed = jsonDecode(response.body);
+  final parsed = jsonDecode(resolvedResponse.body);
   if (parsed is Map<String, dynamic>) {
     _todayDailyCache[cacheKey] = _CachedDaily(
       timestamp: DateTime.now(),
@@ -99,17 +109,16 @@ Future<void> ensureDailyForToday({
 
   final apiUrl =
       dotenv.env['NEXT_PUBLIC_API_URL'] ?? dotenv.env['API_URL'] ?? '';
+  final localDay = _localDayKey(DateTime.now());
   final dateIsoUtc = _utcMidnightIsoFromLocalDay(DateTime.now());
 
-  final createRes = await http
-      .post(
-        Uri.parse('$apiUrl/daily'),
-        headers: _authHeaders(token),
-        body: jsonEncode({
-          'data': {'date': dateIsoUtc, 'userId': userId},
-        }),
-      )
-      .timeout(const Duration(seconds: 120));
+  final createRes = await _createDailyWithFallback(
+    apiUrl: apiUrl,
+    token: token,
+    userId: userId,
+    localDay: localDay,
+    dateIsoUtc: dateIsoUtc,
+  );
 
   if (createRes.statusCode < 200 || createRes.statusCode >= 300) {
     throw Exception(
@@ -120,6 +129,86 @@ Future<void> ensureDailyForToday({
   await prefs.setString(persistedKey, localDayKey);
   _todayDailyCache.remove(_todayDailyKey(userId, DateTime.now()));
   await prefs.remove(_todayDailyDiskKey(userId, DateTime.now()));
+}
+
+Future<http.Response> _getDailyWithDate({
+  required String apiUrl,
+  required String token,
+  required int userId,
+  required String dateParam,
+}) async {
+  return http
+      .get(
+        Uri.parse('$apiUrl/daily?date=$dateParam&userId=$userId'),
+        headers: _authHeaders(token),
+      )
+      .timeout(const Duration(seconds: 120));
+}
+
+Future<http.Response> _createDailyWithFallback({
+  required String apiUrl,
+  required String token,
+  required int userId,
+  required String localDay,
+  required String dateIsoUtc,
+}) async {
+  final localDayEndOfDay = '$localDay 23:59:59';
+  final attempts = <_DailyCreateAttempt>[
+    _DailyCreateAttempt(
+      url: '$apiUrl/daily',
+      body: {
+        'data': {'date': localDayEndOfDay, 'userId': userId},
+      },
+    ),
+    _DailyCreateAttempt(
+      url: '$apiUrl/daily',
+      body: {
+        'data': {'date': localDay, 'userId': userId},
+      },
+    ),
+    _DailyCreateAttempt(
+      url: '$apiUrl/daily',
+      body: {
+        'data': {'date': dateIsoUtc, 'userId': userId},
+      },
+    ),
+    _DailyCreateAttempt(
+      url: '$apiUrl/daily',
+      body: {'date': localDay, 'userId': userId},
+    ),
+    _DailyCreateAttempt(
+      url: '$apiUrl/daily',
+      body: {'date': dateIsoUtc, 'userId': userId},
+    ),
+    _DailyCreateAttempt(
+      url: '$apiUrl/daily',
+      body: {
+        'data': {'date': localDay},
+      },
+    ),
+    _DailyCreateAttempt(
+      url: '$apiUrl/daily',
+      body: {'date': localDay},
+    ),
+  ];
+
+  http.Response? lastResponse;
+  for (final attempt in attempts) {
+    final response = await http
+        .post(
+          Uri.parse(attempt.url),
+          headers: _authHeaders(token),
+          body: jsonEncode(attempt.body),
+        )
+        .timeout(const Duration(seconds: 120));
+    lastResponse = response;
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return response;
+    }
+  }
+
+  return lastResponse ??
+      http.Response('Daily create not attempted', 500);
 }
 
 Map<String, String> _authHeaders(String token) => {
@@ -190,4 +279,11 @@ Future<void> _saveTodayDailyToDisk(int userId, Map<String, dynamic>? data) async
     'data': data,
   };
   await prefs.setString(key, jsonEncode(payload));
+}
+
+class _DailyCreateAttempt {
+  final String url;
+  final Map<String, dynamic> body;
+
+  const _DailyCreateAttempt({required this.url, required this.body});
 }
