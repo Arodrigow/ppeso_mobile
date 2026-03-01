@@ -155,33 +155,36 @@ Future<http.Response> _createDailyWithFallback({
   final localDayEndOfDay = '$localDay 23:59:59';
   final attempts = <_DailyCreateAttempt>[
     _DailyCreateAttempt(
-      url: '$apiUrl/daily',
+      url: '$apiUrl/daily?userId=$userId',
       body: {
+        'userId': userId,
         'data': {'date': localDayEndOfDay, 'userId': userId},
       },
     ),
     _DailyCreateAttempt(
-      url: '$apiUrl/daily',
+      url: '$apiUrl/daily?userId=$userId',
       body: {
+        'userId': userId,
         'data': {'date': localDay, 'userId': userId},
       },
     ),
     _DailyCreateAttempt(
-      url: '$apiUrl/daily',
+      url: '$apiUrl/daily?userId=$userId',
       body: {
+        'userId': userId,
         'data': {'date': dateIsoUtc, 'userId': userId},
       },
     ),
     _DailyCreateAttempt(
-      url: '$apiUrl/daily',
+      url: '$apiUrl/daily?userId=$userId',
       body: {'date': localDay, 'userId': userId},
     ),
     _DailyCreateAttempt(
-      url: '$apiUrl/daily',
+      url: '$apiUrl/daily?userId=$userId',
       body: {'date': dateIsoUtc, 'userId': userId},
     ),
     _DailyCreateAttempt(
-      url: '$apiUrl/daily',
+      url: '$apiUrl/daily?userId=$userId',
       body: {
         'data': {'date': localDay},
       },
